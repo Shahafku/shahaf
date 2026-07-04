@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Sail Trainer 3D — learn to sail a yacht</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛵</text></svg>" />
+</head>
+<body>
+<div id="app"></div>
+
+<!-- Brand -->
+<div id="brand">⛵ <b>Sail Trainer 3D</b><span> · learn the wind</span></div>
+
+<!-- Lesson panel (top-left) -->
+<div id="lessonPanel" class="panel">
+  <div id="lessonTitle">Lesson</div>
+  <div id="lessonBrief" class="brief"></div>
+  <div id="lessonStep" class="step"></div>
+  <div id="markInfo" class="markinfo"></div>
+</div>
+
+<!-- Status + race clock (top-center) -->
+<div id="statusWrap">
+  <div id="statusBadge" class="status"></div>
+  <div id="raceClock"></div>
+</div>
+
+<!-- Wind rose (top-right) -->
+<div id="rosePanel" class="panel">
+  <canvas id="windRose" width="230" height="230"></canvas>
+  <div class="windnums">
+    <span class="true">■ TRUE <b id="twsVal">12</b> kn</span>
+    <span class="app">■ APP <b id="awsVal">12</b> kn</span>
+  </div>
+</div>
+
+<!-- Instruments (bottom-left) -->
+<div id="instruments" class="panel">
+  <div class="inst"><label>SPEED</label><div class="big"><span id="speedVal">0.0</span><small>kn</small></div></div>
+  <div class="inst"><label>HDG</label><div class="big small" id="headingVal">000°</div></div>
+  <div class="inst"><label>HEEL</label><div class="big small" id="heelVal">0°</div></div>
+  <div class="inst"><label>TRIM</label><div class="big small" id="effVal">0%</div></div>
+  <div class="posrow"><span id="posName">—</span><span id="tackName" class="tack">—</span></div>
+</div>
+
+<!-- Trim bar + coach tip (bottom-center) -->
+<div id="trimWrap">
+  <canvas id="trimBar" width="360" height="64"></canvas>
+  <div id="tipText" class="tip"></div>
+</div>
+
+<!-- Right rail -->
+<div id="rail">
+  <div id="lessonPicker" class="picker"></div>
+  <button id="autoTrimBtn" class="railbtn" title="Auto-trim (T)">AUTO<br/>TRIM</button>
+  <button id="camBtn" class="railbtn wide" title="Camera (C)">📷 CHASE</button>
+  <button id="audioBtn" class="railbtn" title="Sound (M)">🔇</button>
+  <button id="helpBtn" class="railbtn" title="Help (H)" onclick="document.getElementById('helpPanel').classList.toggle('show')">?</button>
+</div>
+
+<!-- Wind panel (free sail) -->
+<div id="windPanel" class="panel">
+  <div class="ptitle">WIND</div>
+  <label>Direction <b id="windDirVal">0°</b></label>
+  <input id="windDir" type="range" min="0" max="359" value="0" />
+  <label>Speed <b id="windSpdVal">12 kn</b></label>
+  <input id="windSpd" type="range" min="4" max="28" value="12" />
+</div>
+
+<!-- Touch controls -->
+<div id="touch">
+  <div class="tgroup">
+    <button id="btnLeft">⟲</button><button id="btnRight">⟳</button>
+    <div class="tlabel">RUDDER</div>
+  </div>
+  <div class="tgroup">
+    <button id="btnIn">−</button><button id="btnOut">+</button>
+    <div class="tlabel">SHEET</div>
+  </div>
+</div>
+
+<!-- Help -->
+<div id="helpPanel" class="panel">
+  <div class="ptitle">CONTROLS</div>
+  <table>
+    <tr><td><kbd>A</kbd>/<kbd>D</kbd> or <kbd>←</kbd>/<kbd>→</kbd></td><td>rudder (steer)</td></tr>
+    <tr><td><kbd>W</kbd>/<kbd>S</kbd> or <kbd>↑</kbd>/<kbd>↓</kbd></td><td>sheet in / ease out</td></tr>
+    <tr><td><kbd>T</kbd></td><td>auto-trim assist</td></tr>
+    <tr><td><kbd>C</kbd></td><td>camera: chase · helm · tactical</td></tr>
+    <tr><td><kbd>1</kbd>–<kbd>6</kbd></td><td>choose lesson</td></tr>
+    <tr><td><kbd>M</kbd></td><td>sound on/off</td></tr>
+    <tr><td>drag / wheel</td><td>orbit / zoom (chase cam)</td></tr>
+  </table>
+  <div class="hint">Read the wind rose: <span style="color:#4fa8ff">blue = true wind</span>,
+    <span style="color:#ffb14f">orange = apparent wind</span>, red wedge = no-go zone.</div>
+</div>
+
+<!-- Lesson complete overlay -->
+<div id="completeOverlay">
+  <div class="card">
+    <div id="completeText"></div>
+    <div class="btnrow">
+      <button id="retryBtn">↻ Sail it again</button>
+      <button id="nextLessonBtn" class="primary">Next lesson ⏎</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
