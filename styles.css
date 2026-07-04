@@ -1,0 +1,204 @@
+/* Sail Trainer 3D — HUD styling */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  color: #eaf3fa;
+  background: #0a2438;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#app, #app canvas { position: fixed; inset: 0; }
+
+kbd {
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 4px;
+  padding: 0 5px;
+  font-family: inherit;
+  font-size: 0.9em;
+}
+
+.panel {
+  position: fixed;
+  background: rgba(7, 21, 33, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(140, 190, 230, 0.18);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 8px 28px rgba(0, 8, 16, 0.35);
+}
+
+#brand {
+  position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+  font-size: 15px; letter-spacing: 0.4px; opacity: 0.92;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+  pointer-events: none; z-index: 5;
+}
+#brand span { opacity: 0.65; font-size: 13px; }
+
+/* ---------------- Lesson panel ---------------- */
+#lessonPanel { top: 46px; left: 14px; width: 330px; z-index: 4; }
+#lessonTitle { font-weight: 700; font-size: 15px; color: #8fd0ff; letter-spacing: 0.3px; }
+#lessonBrief { margin-top: 6px; font-size: 12.5px; line-height: 1.45; opacity: 0.88; }
+#lessonStep {
+  margin-top: 10px; font-size: 13px; line-height: 1.45;
+  background: rgba(90, 190, 255, 0.10);
+  border-left: 3px solid #4fa8ff;
+  padding: 8px 10px; border-radius: 0 8px 8px 0;
+}
+.markinfo { margin-top: 8px; font-size: 12px; color: #7dffb5; font-variant-numeric: tabular-nums; }
+
+/* ---------------- Status ---------------- */
+#statusWrap {
+  position: fixed; top: 44px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 4;
+  pointer-events: none;
+}
+.status {
+  padding: 7px 18px; border-radius: 999px; font-weight: 700; font-size: 14px;
+  letter-spacing: 0.6px; opacity: 0; transition: opacity 0.25s;
+  background: rgba(20, 40, 60, 0.8); border: 1px solid rgba(255,255,255,0.2);
+}
+.status.good { background: rgba(28, 130, 70, 0.85); border-color: #4fdc8b; }
+.status.warn { background: rgba(160, 110, 20, 0.85); border-color: #ffc14f; }
+.status.bad  { background: rgba(150, 35, 35, 0.88); border-color: #ff7a6e; animation: throb 1s infinite; }
+@keyframes throb { 50% { transform: scale(1.05); } }
+#raceClock {
+  display: none; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+}
+
+/* ---------------- Wind rose ---------------- */
+#rosePanel { top: 14px; right: 14px; padding: 8px; z-index: 4; }
+#windRose { display: block; }
+.windnums { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 6px 4px; }
+.windnums .true { color: #4fa8ff; }
+.windnums .app { color: #ffb14f; }
+
+/* ---------------- Instruments ---------------- */
+#instruments {
+  left: 14px; bottom: 14px; z-index: 4;
+  display: grid; grid-template-columns: repeat(4, auto); gap: 4px 18px;
+}
+.inst label { font-size: 10px; letter-spacing: 1px; opacity: 0.6; }
+.big { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.big.small { font-size: 22px; padding-top: 5px; }
+.big small { font-size: 12px; opacity: 0.6; margin-left: 3px; }
+.posrow {
+  grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline;
+  border-top: 1px solid rgba(255,255,255,0.12); margin-top: 6px; padding-top: 6px;
+}
+#posName { font-weight: 700; font-size: 14.5px; color: #8fd0ff; }
+#posName.danger { color: #ff8a80; }
+.tack { font-size: 12px; opacity: 0.75; }
+#heelVal.danger { color: #ff8a80; }
+
+/* ---------------- Trim + tip ---------------- */
+#trimWrap {
+  position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 4;
+}
+#trimBar {
+  background: rgba(7, 21, 33, 0.72);
+  border: 1px solid rgba(140, 190, 230, 0.18);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+.tip {
+  max-width: 460px; text-align: center; font-size: 13px; line-height: 1.4;
+  background: rgba(7, 21, 33, 0.72); border: 1px solid rgba(140,190,230,0.18);
+  border-radius: 10px; padding: 8px 14px;
+  backdrop-filter: blur(10px);
+}
+.tip.pulse { animation: tipIn 0.35s ease-out; }
+@keyframes tipIn { from { transform: translateY(8px); opacity: 0.2; } }
+
+/* ---------------- Right rail ---------------- */
+#rail {
+  position: fixed; right: 14px; top: 300px; z-index: 4;
+  display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+}
+.picker { display: flex; flex-direction: column; gap: 6px; }
+.picker button, .railbtn {
+  min-width: 44px; min-height: 40px;
+  background: rgba(7, 21, 33, 0.72); color: #cfe6f7;
+  border: 1px solid rgba(140,190,230,0.25); border-radius: 10px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s, border-color 0.15s;
+}
+.picker button:hover, .railbtn:hover { background: rgba(40, 80, 115, 0.8); }
+.picker button.active { border-color: #4fa8ff; color: #8fd0ff; background: rgba(35, 90, 140, 0.6); }
+.picker button.locked { opacity: 0.38; }
+.railbtn.on { border-color: #4fdc8b; color: #7dffb5; }
+.railbtn.wide { padding: 0 10px; font-size: 11px; }
+#autoTrimBtn { font-size: 9px; line-height: 1.3; }
+
+/* ---------------- Wind panel ---------------- */
+#windPanel { right: 14px; bottom: 14px; width: 190px; display: none; z-index: 4; }
+#windPanel.show { display: block; }
+.ptitle { font-size: 11px; letter-spacing: 1.5px; opacity: 0.65; margin-bottom: 8px; }
+#windPanel label { display: block; font-size: 12px; margin-top: 6px; }
+#windPanel input[type="range"] { width: 100%; accent-color: #4fa8ff; }
+
+/* ---------------- Touch ---------------- */
+#touch {
+  position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+  display: none; gap: 40px; z-index: 4;
+}
+@media (pointer: coarse) { #touch { display: flex; } }
+.tgroup { text-align: center; }
+.tgroup button {
+  width: 58px; height: 58px; border-radius: 50%; font-size: 24px; margin: 0 5px;
+  background: rgba(7,21,33,0.6); color: #eaf3fa; border: 1px solid rgba(140,190,230,0.35);
+}
+.tlabel { font-size: 10px; letter-spacing: 1px; opacity: 0.6; margin-top: 4px; }
+
+/* ---------------- Help ---------------- */
+#helpPanel { right: 70px; top: 300px; width: 300px; display: none; z-index: 6; }
+#helpPanel.show { display: block; }
+#helpPanel table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+#helpPanel td { padding: 4px 2px; vertical-align: top; }
+#helpPanel td:first-child { white-space: nowrap; padding-right: 10px; }
+#helpPanel .hint { margin-top: 8px; font-size: 12px; opacity: 0.85; line-height: 1.4; }
+
+/* ---------------- Complete overlay ---------------- */
+#completeOverlay {
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  background: rgba(4, 12, 20, 0.55); z-index: 10;
+  backdrop-filter: blur(3px);
+}
+#completeOverlay.show { display: flex; }
+#completeOverlay .card {
+  width: min(520px, 88vw);
+  background: rgba(10, 28, 44, 0.95);
+  border: 1px solid rgba(140, 190, 230, 0.3);
+  border-radius: 18px; padding: 28px 30px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: cardIn 0.4s ease-out;
+}
+@keyframes cardIn { from { transform: translateY(18px) scale(0.97); opacity: 0; } }
+#completeOverlay h2 { color: #7dffb5; font-size: 20px; margin-bottom: 10px; }
+#completeOverlay p { font-size: 14px; line-height: 1.55; opacity: 0.92; }
+.raceResult { font-size: 16px; margin-bottom: 10px; color: #8fd0ff; }
+.btnrow { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.btnrow button {
+  padding: 10px 18px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
+  background: rgba(255,255,255,0.08); color: #eaf3fa; border: 1px solid rgba(255,255,255,0.2);
+}
+.btnrow button.primary { background: #1e6fb8; border-color: #4fa8ff; }
+.btnrow button:hover { filter: brightness(1.2); }
+
+/* ---------------- Small screens ---------------- */
+@media (max-width: 900px) {
+  #lessonPanel { width: 260px; font-size: 12px; top: 40px; }
+  #rosePanel { transform: scale(0.78); transform-origin: top right; }
+  #instruments { gap: 2px 10px; }
+  .big { font-size: 22px; }
+  .big.small { font-size: 16px; }
+  #trimBar { width: 300px; }
+  .tip { max-width: 320px; font-size: 12px; }
+  #rail { top: auto; bottom: 150px; }
+}
