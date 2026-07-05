@@ -161,7 +161,8 @@ export class Boat {
     this.byTheLee = absAWA > 165 * DEG || (absAWA > 140 * DEG && Math.sign(this.boom) === windSide);
 
     if (this.autoTrim) {
-      const ideal = clamp(absAWA - OPT_AOA, 4 * DEG, SHEET_MAX);
+      // Chase the sheet that maximises drive (computed below, 1-frame lag).
+      const ideal = clamp(this.bestSheet ?? absAWA - OPT_AOA, 4 * DEG, SHEET_MAX);
       this.sheet += clamp(ideal - this.sheet, -0.6 * dt, 0.6 * dt);
     }
 
@@ -220,13 +221,15 @@ export class Boat {
     this.inIrons = Math.abs(this.twa) < 35 * DEG && this.speed < 0.55;
 
     // Trim efficiency: current drive vs best achievable drive at this AWA.
-    let best = 1e-6;
+    let best = 1e-6, bestS = clamp(absAWA - OPT_AOA, 2 * DEG, SHEET_MAX);
     for (let s = 2 * DEG; s <= SHEET_MAX; s += 2 * DEG) {
       const d = driveCoefAt(absAWA, s);
-      if (d > best) best = d;
+      if (d > best) { best = d; bestS = s; }
     }
+    this.bestSheet = bestS;
     const cur = Math.max(0, Cl * sinA - Cd * cosA);
-    this.efficiency = clamp(cur / best, 0, 1);
+    // No meaningful drive is possible near head-to-wind — trim reads 0 there.
+    this.efficiency = best < 0.04 ? 0 : clamp(cur / best, 0, 1);
   }
 }
 

@@ -1,5 +1,5 @@
 // hud.js — instruments: wind rose, trim gauge, speed/heel, status + tips
-import { DEG, KNOTS, SHEET_MAX, pointOfSail, tackName } from './physics.js';
+import { DEG, KNOTS, SHEET_MAX, pointOfSail, tackName, driveCoefAt } from './physics.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -187,24 +187,31 @@ export class HUD {
     roundRect(ctx, pad, y0, bw, bh, 8);
     ctx.fill();
 
-    // Zones for the current apparent wind angle:
-    //   sheet > AWA-5°  → sail luffs;  AWA-25°..AWA-13° → sweet spot;
-    //   sheet < AWA-35° → stalled.
-    const luffFrom = Math.max(0, absAWA - 5 * DEG);
-    const sweetLo = absAWA - 25 * DEG, sweetHi = absAWA - 13 * DEG;
-    const stallTo = absAWA - 35 * DEG;
-
-    const zone = (a, b, color) => {
-      const x1 = Math.max(pad, Math.min(X(a), pad + bw));
-      const x2 = Math.max(pad, Math.min(X(b), pad + bw));
-      if (x2 - x1 < 1) return;
-      ctx.fillStyle = color;
-      roundRect(ctx, x1, y0, x2 - x1, bh, 4);
-      ctx.fill();
-    };
-    zone(0, stallTo, 'rgba(255,120,80,0.4)');            // stalled (too tight)
-    zone(sweetLo, sweetHi, 'rgba(90,230,140,0.55)');     // perfect
-    zone(luffFrom, SHEET_MAX, 'rgba(120,170,255,0.35)'); // luffing (too loose)
+    // Color the whole track from the real physics: at each sheet setting,
+    // how much drive would the sail make at the current apparent wind angle?
+    // Green = near-max drive, red = stalled/weak, blue = luffing (too loose).
+    let best = 1e-6;
+    const N = 64, drives = new Array(N + 1);
+    for (let i = 0; i <= N; i++) {
+      const s = (i / N) * SHEET_MAX;
+      drives[i] = driveCoefAt(absAWA, s);
+      if (drives[i] > best) best = drives[i];
+    }
+    ctx.save();
+    roundRect(ctx, pad, y0, bw, bh, 8);
+    ctx.clip();
+    const seg = bw / N;
+    for (let i = 0; i < N; i++) {
+      const s = (i / N) * SHEET_MAX;
+      const rel = Math.max(0, drives[i]) / best;
+      const luff = absAWA - s < 5 * DEG; // boom weathervanes → flogging
+      if (luff) ctx.fillStyle = 'rgba(120,170,255,0.35)';
+      else if (rel > 0.93) ctx.fillStyle = 'rgba(90,230,140,0.60)';
+      else if (rel > 0.7) ctx.fillStyle = `rgba(${170 - 90 * (rel - 0.7) / 0.23 | 0},210,120,0.42)`;
+      else ctx.fillStyle = `rgba(255,${60 + 140 * rel | 0},70,0.38)`;
+      ctx.fillRect(pad + i * seg, y0, seg + 0.5, bh);
+    }
+    ctx.restore();
 
     // Marker: current sheet
     const mx = X(boat.sheet);

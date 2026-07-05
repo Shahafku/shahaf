@@ -207,6 +207,9 @@ windSpdInput.addEventListener('input', () => {
   document.getElementById('windSpdVal').textContent = windSpdInput.value + ' kn';
 });
 
+// Debug/console handle (also used by automated tests)
+window.__sail = { boat, wind, lessons, LESSONS, view };
+
 // ------------------------------------------------------------------- Loop
 lessons.start(0, boat, wind);
 document.getElementById('camBtn').textContent = '📷 ' + camModes[0];

@@ -296,11 +296,11 @@ export class BoatView {
     this.heelGroup.rotation.x = pitch;
 
     // Rudder & wheel
-    this.rudderMesh.rotation.y = -boat.rudder * 0.6;
+    this.rudderMesh.rotation.y = boat.rudder * 0.6;
     this.wheel.rotation.z = -boat.rudder * 2.2;
 
-    // Boom: physics gives +boom = starboard; local rot.y sends tip to port
-    this.boomGroup.rotation.y = -boat.boom;
+    // Boom: physics +boom = starboard; rotation.y = +θ swings the tip to +X
+    this.boomGroup.rotation.y = boat.boom;
 
     // Windex points into the apparent wind (boat frame): rotate local +Z to AWA
     this.windex.rotation.y = -boat.awa;
@@ -322,7 +322,7 @@ export class BoatView {
 
     // Jib: swings a little wider than the main, same side
     const jibAngle = Math.min(Math.abs(boat.boom) * 1.06 + 0.06, 1.5) * bellySide;
-    this.jibGroup.rotation.y = -jibAngle;
+    this.jibGroup.rotation.y = jibAngle;
     const JH = this.jibLuff.y * 0.94, JAFT = -this.jibLuff.z; // luff rises & goes aft
     this._deformSail(
       this.jib, this.jibRows, this.jibCols,
