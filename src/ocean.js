@@ -210,6 +210,55 @@ function makeCloudTexture() {
   return tex;
 }
 
+// ------------------------------------------------------- Wind streaks
+// Faint streaks that drift with the true wind just above the water, so the
+// player can SEE the breeze and its shifts.
+export class WindStreaks {
+  constructor(scene, count = 90) {
+    this.count = count;
+    this.range = 220; // box half-size around the focus point
+    const pos = new Float32Array(count * 2 * 3);
+    this.head = new Float32Array(count * 2); // per-streak x,z head position
+    this.phase = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      this.head[i * 2] = (Math.random() * 2 - 1) * this.range;
+      this.head[i * 2 + 1] = (Math.random() * 2 - 1) * this.range;
+      this.phase[i] = Math.random() * Math.PI * 2;
+    }
+    this.geo = new THREE.BufferGeometry();
+    this.geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    this.lines = new THREE.LineSegments(
+      this.geo,
+      new THREE.LineBasicMaterial({ color: 0xdfeefb, transparent: true, opacity: 0.34, depthWrite: false })
+    );
+    this.lines.frustumCulled = false;
+    scene.add(this.lines);
+  }
+
+  update(dt, wind, focus, t) {
+    const v = wind.vel();
+    const len = Math.min(9, 1.2 + wind.speed * 0.55); // streak length ~ wind speed
+    const nx = v.x / (wind.speed || 1), nz = v.z / (wind.speed || 1);
+    const pos = this.geo.attributes.position.array;
+    const R = this.range;
+    for (let i = 0; i < this.count; i++) {
+      let hx = this.head[i * 2] + v.x * dt * 1.35;
+      let hz = this.head[i * 2 + 1] + v.z * dt * 1.35;
+      // wrap inside the box around the focus
+      if (hx > R) hx -= 2 * R; else if (hx < -R) hx += 2 * R;
+      if (hz > R) hz -= 2 * R; else if (hz < -R) hz += 2 * R;
+      this.head[i * 2] = hx;
+      this.head[i * 2 + 1] = hz;
+      const wx = focus.x + hx, wz = focus.z + hz;
+      const y = waveHeight(wx, wz, t) + 0.32 + 0.1 * Math.sin(t * 2 + this.phase[i]);
+      const j = i * 6;
+      pos[j] = wx; pos[j + 1] = y; pos[j + 2] = wz;
+      pos[j + 3] = wx - nx * len; pos[j + 4] = y + 0.05; pos[j + 5] = wz - nz * len;
+    }
+    this.geo.attributes.position.needsUpdate = true;
+  }
+}
+
 // ------------------------------------------------------------------- Buoys
 export function makeBuoy(color = 0xff5a1f) {
   const g = new THREE.Group();

@@ -173,8 +173,10 @@ Other relevant rules of the road:
   vessel *always* keeps clear — even under sail).
 - Racing (RRS) mirrors Rule 12: port/starboard, windward/leeward, plus mark-room rules.
 
-The simulator surfaces Rule 12 by always naming your current tack on the instrument
-panel, and the tacking lesson teaches which tack stands on and which keeps clear.
+The simulator surfaces Rule 12 three ways: the instrument panel always names your
+current tack; the tacking lesson teaches which tack stands on; and in Free Sail an
+AI yacht sails a circuit while the HUD calls the live Rule 12 situation — whether
+you are the stand-on or the give-way vessel, and what to do about it.
 
 ## 6. Wind Behavior Worth Simulating
 

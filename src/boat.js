@@ -201,6 +201,50 @@ export class BoatView {
     this.jibGroup.add(this.jib);
     // Forestay direction in jib-local space (toward masthead)
     this.jibLuff = this.mastTop.clone().sub(this.jibGroup.position); // (0, up, aft)
+
+    this._buildTelltales();
+  }
+
+  // Telltales: yarn ribbons on the main leech — they stream aft with clean
+  // flow and whip around when the sail is luffing or stalled.
+  _buildTelltales() {
+    this.telltales = [];
+    const mat = new THREE.LineBasicMaterial({ color: 0xe33d2e, linewidth: 2 });
+    const SEGS = 3, LEN = 0.85;
+    const heights = [0.3, 0.55, 0.78]; // fractions up the leech
+    for (const h of heights) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((SEGS + 1) * 3), 3));
+      const line = new THREE.Line(geo, mat);
+      line.frustumCulled = false;
+      this.boomGroup.add(line);
+      this.telltales.push({ line, h, segs: SEGS, len: LEN, seed: Math.random() * 10 });
+    }
+  }
+
+  _updateTelltales(boat, t) {
+    // Attachment point: on the leech (aft edge) of the main at height h.
+    const H = MAST_H - BOOM_H - 0.2;
+    for (const tt of this.telltales) {
+      const u = tt.h;
+      const chord = BOOM_LEN * Math.pow(1 - u, 0.92);
+      const ax = 0, ay = u * H, az = -chord; // leech point in boom-local space
+      // Flow state decides the ribbon's shape.
+      const chaos = boat.luffing ? 1 : boat.stalled ? 0.75 : 0.12;
+      const pos = tt.line.geometry.attributes.position.array;
+      let px = ax, py = ay, pz = az;
+      pos[0] = px; pos[1] = py; pos[2] = pz;
+      const step = tt.len / tt.segs;
+      for (let s = 1; s <= tt.segs; s++) {
+        const w1 = Math.sin(t * (14 + 5 * chaos) + tt.seed + s * 1.7) * chaos;
+        const w2 = Math.cos(t * 11 + tt.seed * 2 + s * 2.3) * chaos;
+        px += w1 * step * 0.9;                 // sideways whip
+        py += (w2 * 0.55 - 0.12) * step;       // droop a little, flap a lot
+        pz += -step * (1 - 0.55 * chaos);      // stream aft when flow is clean
+        pos[s * 3] = px; pos[s * 3 + 1] = py; pos[s * 3 + 2] = pz;
+      }
+      tt.line.geometry.attributes.position.needsUpdate = true;
+    }
   }
 
   // Reshape a sail grid. luffFn(u)->Vector3 point on the luff, chordFn(u)->length,
@@ -330,6 +374,8 @@ export class BoatView {
       (u) => 3.4 * Math.pow(1 - u, 1.0) + 0.001,
       bellySide * (0.07 + 0.11 * power) * (1 - flap * 0.9), flap, t + 0.7
     );
+
+    this._updateTelltales(boat, t);
 
     // Wake spawning ∝ speed
     this._wakeAccum += dt * Math.min(28, Math.abs(boat.speed) * 9);
