@@ -40,6 +40,7 @@ is vendored in `vendor/`.
 | `W`/`S` or `↑`/`↓` | Sheet in / ease out |
 | `T` | Auto-trim assist |
 | `C` | Camera: chase · helm · tactical top-down |
+| `P` | Points-of-sail diagram |
 | `1`–`6` | Select lesson |
 | `M` | Sound |
 | `H` | Help |
