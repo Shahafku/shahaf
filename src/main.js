@@ -5,6 +5,8 @@ import { Environment } from './ocean.js';
 import { BoatView } from './boat.js';
 import { HUD } from './hud.js';
 import { LESSONS, LessonManager } from './lessons.js';
+import { TrafficBoat } from './traffic.js';
+import { WindStreaks } from './ocean.js';
 
 // ------------------------------------------------------------------ Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -23,6 +25,8 @@ const boat = new Boat();
 const view = new BoatView(scene);
 const hud = new HUD();
 const lessons = new LessonManager(scene, hud);
+const traffic = new TrafficBoat(scene);
+const streaks = new WindStreaks(scene);
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -216,7 +220,7 @@ document.getElementById('setSailBtn').addEventListener('click', () => {
 });
 
 // Debug/console handle (also used by automated tests)
-window.__sail = { boat, wind, lessons, LESSONS, view };
+window.__sail = { boat, wind, lessons, LESSONS, view, traffic };
 
 // ------------------------------------------------------------------- Loop
 lessons.start(0, boat, wind);
@@ -245,7 +249,10 @@ function frame(now) {
   }
 
   view.update(dt, boat, wind, env.time);
-  lessons.update(dt, boat, wind, env.time);
+  traffic.setActive(!!lessons.lesson().free, wind);
+  const advisory = traffic.update(dt, wind, boat, env.time);
+  lessons.update(dt, boat, wind, env.time, advisory);
+  streaks.update(dt, wind, boat.pos, env.time);
   updateCamera(dt);
   env.update(dt, camera, boat.pos);
   updateAudio();

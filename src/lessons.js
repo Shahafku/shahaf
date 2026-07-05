@@ -136,7 +136,8 @@ export const LESSONS = [
     id: 'free',
     title: 'Free Sail',
     brief:
-      'Open water. Change wind strength and direction from the WIND panel and feel how the boat answers on every point of sail. Gusts and shifts are live — watch the apparent wind move.',
+      'Open water. Change wind strength and direction from the WIND panel and feel how the boat answers on every point of sail. Gusts and shifts are live — watch the apparent wind move. ' +
+      'A <b>tan-sailed yacht</b> is sailing a circuit: practice <b>COLREGs Rule 12</b> — the HUD tells you who stands on and who keeps clear.',
     wind: { dirFrom: 0, speed: 6.5, live: true },
     boat: { x: 0, z: 0, heading: 90 * DEG, sheet: 45 * DEG },
     marks: [],
@@ -217,7 +218,7 @@ export class LessonManager {
     this.panelStep.innerHTML = s ? s.text : (L.free ? 'Sail anywhere. Try every point of sail.' : 'Head for the glowing ring.');
   }
 
-  update(dt, boat, wind, envTime) {
+  update(dt, boat, wind, envTime, advisory = null) {
     const L = this.lesson();
 
     // Buoy animation + guidance
@@ -253,7 +254,8 @@ export class LessonManager {
         if (this.markIdx >= L.marks.length) this._complete();
       }
     } else if (!L.marks.length) {
-      this.markInfo.textContent = L.free ? 'Free sailing — no marks' : '';
+      if (advisory) this.markInfo.innerHTML = advisory.text;
+      else this.markInfo.textContent = L.free ? 'Free sailing — watch for the tan yacht (Rule 12)' : '';
     }
 
     // Step advancement
@@ -274,15 +276,17 @@ export class LessonManager {
       }
     }
 
-    this._tips(boat);
+    this._tips(boat, advisory);
   }
 
-  _tips(boat) {
+  _tips(boat, advisory = null) {
     // Live coaching (priority order). The status badge covers the raw state;
     // these explain WHY and WHAT TO DO.
     const hud = this.hud;
     if (boat.inIrons) {
       hud.setTip('⚓ <b>In irons.</b> Head-to-wind with no speed: sails can’t fill. Hold the rudder over, let the bow fall off ~50°, then sheet in.', 'irons');
+    } else if (advisory && advisory.urgent) {
+      hud.setTip(advisory.text, 'colreg');
     } else if (boat.byTheLee) {
       hud.setTip('⚠️ <b>Sailing by the lee</b> — the wind is creeping behind the boom. Head up a touch or gybe deliberately before the boom does it for you.', 'lee');
     } else if (boat.luffing && Math.abs(boat.twa) > 35 * DEG) {

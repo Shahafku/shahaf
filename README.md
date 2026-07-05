@@ -30,7 +30,7 @@ is vendored in `vendor/`.
 | 3 · Tacking | Turning the bow through the wind with speed; beating upwind; COLREGs Rule 12 |
 | 4 · Downwind & the Gybe | Broad reaching, running, controlled gybes, "by the lee" danger |
 | 5 · Round the Course | A timed triangle regatta — beat, reach, run |
-| ∞ · Free Sail | Open water with live wind controls, gusts and shifts |
+| ∞ · Free Sail | Open water with live wind controls, gusts and shifts — plus an AI yacht for practicing COLREGs Rule 12 right-of-way |
 
 ## Controls
 
