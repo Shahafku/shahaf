@@ -6,6 +6,8 @@ curriculum on open water.
 
 ![Made with Three.js](https://img.shields.io/badge/three.js-r160-049EF4) ![No build step](https://img.shields.io/badge/build-none-success)
 
+![Sail Trainer 3D — close-hauled on port tack during the tacking lesson](docs/screenshot.png)
+
 ## Play
 
 Any static file server works (ES modules can't load from `file://`):
