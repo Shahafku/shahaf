@@ -183,6 +183,9 @@ export class BoatView {
       side: THREE.DoubleSide,
       transparent: true,
       opacity: 0.97,
+      // sailcloth is translucent — keep the shaded side from going charcoal
+      emissive: 0xb8b4a6,
+      emissiveIntensity: 0.38,
     });
     return new THREE.Mesh(geo, mat);
   }

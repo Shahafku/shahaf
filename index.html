@@ -56,6 +56,7 @@
   <div id="lessonPicker" class="picker"></div>
   <button id="autoTrimBtn" class="railbtn" title="Auto-trim (T)">AUTO<br/>TRIM</button>
   <button id="camBtn" class="railbtn wide" title="Camera (C)">📷 CHASE</button>
+  <button id="posBtn" class="railbtn" title="Points of sail diagram (P)">🧭</button>
   <button id="audioBtn" class="railbtn" title="Sound (M)">🔇</button>
   <button id="helpBtn" class="railbtn" title="Help (H)" onclick="document.getElementById('helpPanel').classList.toggle('show')">?</button>
 </div>
@@ -81,6 +82,12 @@
   </div>
 </div>
 
+<!-- Points of sail diagram -->
+<div id="posPanel" class="panel">
+  <div class="ptitle">POINTS OF SAIL <span class="pclose" onclick="document.getElementById('posPanel').classList.remove('show')">✕</span></div>
+  <canvas id="posDiagram" width="300" height="320"></canvas>
+</div>
+
 <!-- Help -->
 <div id="helpPanel" class="panel">
   <div class="ptitle">CONTROLS</div>
@@ -89,6 +96,7 @@
     <tr><td><kbd>W</kbd>/<kbd>S</kbd> or <kbd>↑</kbd>/<kbd>↓</kbd></td><td>sheet in / ease out</td></tr>
     <tr><td><kbd>T</kbd></td><td>auto-trim assist</td></tr>
     <tr><td><kbd>C</kbd></td><td>camera: chase · helm · tactical</td></tr>
+    <tr><td><kbd>P</kbd></td><td>points-of-sail diagram</td></tr>
     <tr><td><kbd>1</kbd>–<kbd>6</kbd></td><td>choose lesson</td></tr>
     <tr><td><kbd>M</kbd></td><td>sound on/off</td></tr>
     <tr><td>drag / wheel</td><td>orbit / zoom (chase cam)</td></tr>

@@ -21,11 +21,14 @@ export class HUD {
     this.tipEl = $('tipText');
     this._tipTimer = 0;
     this._tipKey = '';
+    this.posPanel = $('posPanel');
+    this.posCtx = $('posDiagram').getContext('2d');
   }
 
   update(dt, boat, wind) {
     this._drawRose(boat, wind);
     this._drawTrim(boat);
+    if (this.posPanel.classList.contains('show')) this._drawPos(boat);
 
     const kn = (boat.speed * KNOTS);
     this.speedEl.textContent = kn.toFixed(1);
@@ -168,6 +171,104 @@ export class HUD {
     ctx.beginPath();
     ctx.moveTo(0, -4);
     ctx.lineTo(0, 16);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ------------------------------------------- Points-of-sail diagram
+  // Wind-up chart: wind always blows from the top; your boat rides around
+  // the circle at its current true wind angle. A boat drawn on the RIGHT
+  // half has the wind over its port side (port tack) and vice versa.
+  _drawPos(boat) {
+    const ctx = this.posCtx;
+    const W = 300, H = 320, cx = W / 2, cy = H / 2 + 14, R = 100;
+    ctx.clearRect(0, 0, W, H);
+
+    // Sectors mirrored port/starboard. Angles in degrees off the wind.
+    const sectors = [
+      { a0: 0, a1: 32, color: 'rgba(255,90,90,0.30)', label: 'NO-GO' },
+      { a0: 32, a1: 52, color: 'rgba(110,190,255,0.22)', label: 'CLOSE-HAULED' },
+      { a0: 52, a1: 80, color: 'rgba(110,255,190,0.16)', label: 'CLOSE REACH' },
+      { a0: 80, a1: 102, color: 'rgba(120,255,140,0.26)', label: 'BEAM REACH' },
+      { a0: 102, a1: 150, color: 'rgba(110,255,190,0.16)', label: 'BROAD REACH' },
+      { a0: 150, a1: 180, color: 'rgba(190,170,255,0.20)', label: 'RUN' },
+    ];
+    for (const s of sectors) {
+      for (const side of [1, -1]) {
+        const s0 = -Math.PI / 2 + side * s.a0 * DEG;
+        const s1 = -Math.PI / 2 + side * s.a1 * DEG;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, R, Math.min(s0, s1), Math.max(s0, s1));
+        ctx.closePath();
+        ctx.fillStyle = s.color;
+        ctx.fill();
+      }
+    }
+    ctx.strokeStyle = 'rgba(170,210,240,0.4)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Labels along the starboard (left) side, horizontal for readability
+    ctx.fillStyle = 'rgba(225,240,250,0.92)';
+    ctx.font = 'bold 9px system-ui';
+    for (const s of sectors) {
+      const mid = (s.a0 + s.a1) / 2;
+      const a = -Math.PI / 2 - mid * DEG; // left half
+      const lr = R - 34;
+      const x = cx + Math.cos(a) * lr, y = cy + Math.sin(a) * lr;
+      ctx.textAlign = 'center';
+      if (s.label === 'NO-GO') { ctx.fillText(s.label, cx, cy - R + 16); continue; }
+      if (s.label === 'RUN') { ctx.fillText(s.label, cx, cy + R - 12); continue; }
+      ctx.fillText(s.label, x, y + 3);
+    }
+
+    // Wind arrows blowing in from the top
+    ctx.strokeStyle = '#4fa8ff';
+    ctx.fillStyle = '#4fa8ff';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    for (const off of [-16, 0, 16]) {
+      ctx.beginPath();
+      ctx.moveTo(cx + off, 8);
+      ctx.lineTo(cx + off, 26);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + off, 34);
+      ctx.lineTo(cx + off - 5, 25);
+      ctx.lineTo(cx + off + 5, 25);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = '#8fd0ff';
+    ctx.font = 'bold 10px system-ui';
+    ctx.textAlign = 'left';
+    ctx.fillText('WIND', cx + 30, 22);
+
+    // Your boat on the circle: TWA + = starboard tack → LEFT half.
+    const t = boat.twa;
+    const px = cx - Math.sin(t) * R;
+    const py = cy - Math.cos(t) * R;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(-t); // bow rotated |twa| away from the wind, toward its side
+    ctx.beginPath();
+    ctx.moveTo(0, -13);
+    ctx.bezierCurveTo(6, -5, 6, 7, 4, 12);
+    ctx.lineTo(-4, 12);
+    ctx.bezierCurveTo(-6, 7, -6, -5, 0, -13);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.strokeStyle = '#123';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.rotate(-boat.boom); // same convention as the wind rose glyph
+    ctx.strokeStyle = '#345';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -2);
+    ctx.lineTo(0, 9);
     ctx.stroke();
     ctx.restore();
   }

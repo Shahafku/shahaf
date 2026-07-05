@@ -43,6 +43,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyC') cycleCamera();
   if (e.code === 'KeyM') toggleAudio();
   if (e.code === 'KeyH') document.getElementById('helpPanel').classList.toggle('show');
+  if (e.code === 'KeyP') document.getElementById('posPanel').classList.toggle('show');
   if (e.code === 'Enter' && lessons.completed) nextLesson();
   if (e.code.startsWith('Digit')) {
     const i = Number(e.code.slice(5)) - 1;
@@ -136,6 +137,8 @@ function toggleAudio() {
   document.getElementById('audioBtn').textContent = audioOn ? '🔊' : '🔇';
 }
 document.getElementById('audioBtn').addEventListener('click', toggleAudio);
+document.getElementById('posBtn').addEventListener('click', () =>
+  document.getElementById('posPanel').classList.toggle('show'));
 
 function makeAudio() {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
