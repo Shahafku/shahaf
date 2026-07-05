@@ -164,6 +164,27 @@ kbd {
 #helpPanel td:first-child { white-space: nowrap; padding-right: 10px; }
 #helpPanel .hint { margin-top: 8px; font-size: 12px; opacity: 0.85; line-height: 1.4; }
 
+/* ---------------- Intro overlay ---------------- */
+#introOverlay {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 12, 20, 0.55); z-index: 11;
+  backdrop-filter: blur(3px);
+}
+#introOverlay.hide { display: none; }
+#introOverlay .card {
+  width: min(480px, 88vw);
+  background: rgba(10, 28, 44, 0.95);
+  border: 1px solid rgba(140, 190, 230, 0.3);
+  border-radius: 18px; padding: 28px 30px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: cardIn 0.4s ease-out;
+}
+#introOverlay h2 { color: #8fd0ff; font-size: 22px; margin-bottom: 10px; }
+#introOverlay p { font-size: 14px; line-height: 1.55; opacity: 0.92; }
+.introkeys { margin: 14px 0; border-collapse: collapse; font-size: 13.5px; }
+.introkeys td { padding: 4px 12px 4px 0; }
+.introhint { font-size: 12.5px !important; opacity: 0.85 !important; }
+
 /* ---------------- Complete overlay ---------------- */
 #completeOverlay {
   position: fixed; inset: 0; display: none; align-items: center; justify-content: center;

@@ -207,6 +207,14 @@ windSpdInput.addEventListener('input', () => {
   document.getElementById('windSpdVal').textContent = windSpdInput.value + ' kn';
 });
 
+// Welcome card: show on first visit only
+const intro = document.getElementById('introOverlay');
+if (localStorage.getItem('sail.seenIntro')) intro.classList.add('hide');
+document.getElementById('setSailBtn').addEventListener('click', () => {
+  intro.classList.add('hide');
+  localStorage.setItem('sail.seenIntro', '1');
+});
+
 // Debug/console handle (also used by automated tests)
 window.__sail = { boat, wind, lessons, LESSONS, view };
 
