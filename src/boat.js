@@ -331,22 +331,24 @@ export class BoatView {
     // Position on the waves + a touch of bob
     const wy = waveHeight(boat.pos.x, boat.pos.z, envTime);
     this.group.position.set(boat.pos.x, wy * 0.55, boat.pos.z);
-    this.group.rotation.y = boat.heading;
+    // Compass heading h → world forward (-sin h, cos h) = three.js yaw of -h.
+    this.group.rotation.y = -boat.heading;
 
-    // Heel (+heel = leans to starboard = local +X down = negative rot.z)
+    // Heel (+heel = leans to starboard = local -X down = positive rot.z)
     // Pitch from wave slope fore/aft.
     const f = boat.forward();
     const ahead = waveHeight(boat.pos.x + f.x * 4, boat.pos.z + f.z * 4, envTime);
     const astern = waveHeight(boat.pos.x - f.x * 4, boat.pos.z - f.z * 4, envTime);
     const pitch = (astern - ahead) * 0.09 + boat.speed * 0.004;
-    this.heelGroup.rotation.z = -boat.heel;
+    this.heelGroup.rotation.z = boat.heel;
     this.heelGroup.rotation.x = pitch;
 
     // Rudder & wheel
     this.rudderMesh.rotation.y = boat.rudder * 0.6;
     this.wheel.rotation.z = -boat.rudder * 2.2;
 
-    // Boom: physics +boom = starboard; rotation.y = +θ swings the tip to +X
+    // Boom: physics +boom = starboard; rotation.y = +θ swings the aft-pointing
+    // tip (local -Z) to local -X = visual starboard.
     this.boomGroup.rotation.y = boat.boom;
 
     // Windex points into the apparent wind (boat frame): rotate local +Z to AWA
@@ -356,7 +358,10 @@ export class BoatView {
     const luffing = boat.luffing ? 1 : 0;
     this._flap = (this._flap ?? 0) + ((luffing || Math.abs(boat.awa) < 0.15 ? 1 : 0) - (this._flap ?? 0)) * Math.min(1, 6 * dt);
     const flap = this._flap;
-    const bellySide = Math.sign(boat.boom) || 1; // sail bellies to leeward (boom side)
+    const boomSign = Math.sign(boat.boom) || 1; // + = boom carried to starboard
+    // Sail bellies to leeward (the side the boom is on). +boom sweeps the tip
+    // toward local -X, so the belly offset in boom-local X is -sign(boom).
+    const bellySide = -boomSign;
     const power = Math.min(1, boat.coef);
     const camberMain = bellySide * (0.06 + 0.10 * power) * (1 - flap * 0.9);
 
@@ -368,7 +373,7 @@ export class BoatView {
     );
 
     // Jib: swings a little wider than the main, same side
-    const jibAngle = Math.min(Math.abs(boat.boom) * 1.06 + 0.06, 1.5) * bellySide;
+    const jibAngle = Math.min(Math.abs(boat.boom) * 1.06 + 0.06, 1.5) * boomSign;
     this.jibGroup.rotation.y = jibAngle;
     const JH = this.jibLuff.y * 0.94, JAFT = -this.jibLuff.z; // luff rises & goes aft
     this._deformSail(

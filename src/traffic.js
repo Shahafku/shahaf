@@ -32,7 +32,8 @@ export class TrafficBoat {
     const w = wind ? wind.baseDirFrom : 0;
     const c = Math.cos(w), s = Math.sin(w);
     const p = CIRCUIT[i % CIRCUIT.length];
-    return { x: p.x * c + p.z * s, z: -p.x * s + p.z * c };
+    // Rotate the north-wind pattern to the current wind: N (0,1) → (-sin w, cos w).
+    return { x: p.x * c - p.z * s, z: p.x * s + p.z * c };
   }
 
   _reset(wind) {
@@ -65,7 +66,7 @@ export class TrafficBoat {
     const wp = this._wp(this.wpIdx, wind);
     const dx = wp.x - b.pos.x, dz = wp.z - b.pos.z;
     if (Math.hypot(dx, dz) < 28) this.wpIdx = (this.wpIdx + 1) % CIRCUIT.length;
-    const brg = Math.atan2(dx, dz);
+    const brg = Math.atan2(-dx, dz); // compass bearing: angle a → (-sin a, cos a)
     b.rudder = clamp(wrapPi(brg - b.heading) * 1.6, -1, 1);
     // Never park in irons: if pinched and slow, bear away to leeward first.
     if (Math.abs(b.twa) < 40 * DEG && b.speed < 1.0) b.rudder = b.twa >= 0 ? -1 : 1;
@@ -88,7 +89,7 @@ export class TrafficBoat {
         : `✔ <b>Rule 12:</b> you are on <b>starboard tack</b>, the tan boat (${m} m) is on port — <b>you stand on</b>: hold course and speed.`;
     } else {
       // Same tack: the windward boat keeps clear (Rule 12a-ii).
-      const wdx = Math.sin(wind.dirFrom), wdz = Math.cos(wind.dirFrom);
+      const wdx = -Math.sin(wind.dirFrom), wdz = Math.cos(wind.dirFrom);
       const playerIsWindward = px * wdx + pz * wdz > 0;
       playerGivesWay = playerIsWindward;
       text = playerGivesWay
