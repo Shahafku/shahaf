@@ -125,7 +125,7 @@ function updateCamera(dt) {
     const yaw = boat.heading + Math.PI + orbitYaw; // behind the boat + user orbit
     const horiz = Math.cos(orbitPitch) * orbitDist;
     want = new THREE.Vector3(
-      bx + Math.sin(yaw) * horiz,
+      bx - Math.sin(yaw) * horiz, // compass yaw → world (-sin, cos)
       2.5 + Math.sin(orbitPitch) * orbitDist,
       bz + Math.cos(yaw) * horiz
     );
