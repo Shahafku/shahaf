@@ -14,8 +14,10 @@ export const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 export const lerp = (a, b, t) => a + (b - a) * t;
 
 // ---------------------------------------------------------------- Wind field
-// dirFrom: world angle the wind blows FROM. Vector convention: angle a maps to
-// direction (sin a, cos a) in the world XZ plane.
+// dirFrom: compass angle the wind blows FROM. Vector convention: compass angle
+// a maps to direction (-sin a, cos a) in the world XZ plane (north = +Z,
+// east = -X), which keeps the frame right-handed in three.js (Y up): the
+// starboard side of a boat facing +Z is -X.
 export class Wind {
   constructor(dirFrom = 0, speed = 6) {
     this.baseDirFrom = dirFrom;
@@ -38,7 +40,7 @@ export class Wind {
   }
   // Velocity vector of the air (points where the wind blows TO).
   vel() {
-    return { x: -Math.sin(this.dirFrom) * this.speed, z: -Math.cos(this.dirFrom) * this.speed };
+    return { x: Math.sin(this.dirFrom) * this.speed, z: -Math.cos(this.dirFrom) * this.speed };
   }
 }
 
@@ -91,7 +93,7 @@ export const OPT_AOA = 19 * DEG;   // target angle of attack for auto-trim
 export class Boat {
   constructor() {
     this.pos = { x: 0, z: 0 };
-    this.heading = 0;       // world angle of the bow, (sin h, cos h)
+    this.heading = 0;       // compass angle of the bow, (-sin h, cos h)
     this.speed = 0;         // m/s along heading (negative = sternway)
     this.latVel = 0;        // leeway drift, + = to starboard
     this.yawRate = 0;
@@ -119,8 +121,8 @@ export class Boat {
     this.maxHeel = 38 * DEG;
   }
 
-  forward() { return { x: Math.sin(this.heading), z: Math.cos(this.heading) }; }
-  starboard() { return { x: Math.cos(this.heading), z: -Math.sin(this.heading) }; }
+  forward() { return { x: -Math.sin(this.heading), z: Math.cos(this.heading) }; }
+  starboard() { return { x: -Math.cos(this.heading), z: -Math.sin(this.heading) }; }
 
   update(dt, wind) {
     const fwd = this.forward(), stb = this.starboard();

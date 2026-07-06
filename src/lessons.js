@@ -12,7 +12,7 @@ export const LESSONS = [
       'Sails work like wings: trim them to the <b>orange APP arrow</b> (apparent wind), not the blue one.',
     wind: { dirFrom: 0, speed: 6.2 },
     boat: { x: 0, z: 0, heading: 90 * DEG, sheet: 80 * DEG },
-    marks: [{ x: 260, z: 10 }],
+    marks: [{ x: -260, z: 10 }], // east of the start (east = -X)
     steps: [
       {
         text: 'Your sail is flapping (<b>luffing</b>) — it makes no power. Press <kbd>W</kbd>/<kbd>↑</kbd> to sheet in until it fills and the trim bar turns green.',
@@ -60,10 +60,10 @@ export const LESSONS = [
       'A <b>tack</b> turns the bow through the wind onto the other close-hauled course. ' +
       '<b>Speed is the fuel</b> that carries you through the no-go zone — never tack slow.',
     wind: { dirFrom: 0, speed: 6.6 },
-    boat: { x: 60, z: 0, heading: 40 * DEG, sheet: 12 * DEG },
+    boat: { x: -60, z: 0, heading: 40 * DEG, sheet: 12 * DEG },
     marks: [
-      { x: -90, z: 170 },
-      { x: 90, z: 340 },
+      { x: 90, z: 170 },
+      { x: -90, z: 340 },
       { x: 0, z: 500 },
     ],
     steps: [
@@ -91,8 +91,8 @@ export const LESSONS = [
     wind: { dirFrom: 0, speed: 6.6 },
     boat: { x: 0, z: 320, heading: 170 * DEG, sheet: 30 * DEG },
     marks: [
-      { x: -110, z: 120 },
-      { x: 110, z: -60 },
+      { x: 110, z: 120 },
+      { x: -110, z: -60 },
       { x: 0, z: -220 },
     ],
     steps: [
@@ -119,7 +119,7 @@ export const LESSONS = [
     boat: { x: 0, z: 0, heading: 45 * DEG, sheet: 14 * DEG },
     marks: [
       { x: 0, z: 420 },
-      { x: 300, z: 120 },
+      { x: -300, z: 120 },
       { x: 0, z: -60 },
     ],
     steps: [
@@ -244,8 +244,9 @@ export class LessonManager {
       const dx = m.x - boat.pos.x, dz = m.z - boat.pos.z;
       const dist = Math.hypot(dx, dz);
       this.ctx.distToMark = dist;
-      const brg = ((Math.atan2(dx, dz) / DEG) % 360 + 360) % 360;
-      const rel = wrapPi(Math.atan2(dx, dz) - boat.heading);
+      // Compass bearing of (dx, dz): angle a maps to (-sin a, cos a).
+      const brg = ((Math.atan2(-dx, dz) / DEG) % 360 + 360) % 360;
+      const rel = wrapPi(Math.atan2(-dx, dz) - boat.heading);
       const side = Math.abs(rel) < 12 * DEG ? 'ahead' : (rel > 0 ? '→ to starboard' : '← to port');
       this.markInfo.textContent =
         `Mark ${this.markIdx + 1}/${L.marks.length} · ${Math.round(dist)} m · brg ${String(Math.round(brg)).padStart(3, '0')}° ${side}`;
