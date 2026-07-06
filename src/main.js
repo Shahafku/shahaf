@@ -61,7 +61,7 @@ document.getElementById('autoTrimBtn').addEventListener('click', toggleAutoTrim)
 
 // Touch / mouse buttons
 for (const [id, code] of [
-  ['btnLeft', 'KeyA'], ['btnRight', 'KeyD'], ['btnIn', 'KeyW'], ['btnOut', 'KeyS'],
+  ['btnLeft', 'ArrowLeft'], ['btnRight', 'ArrowRight'], ['btnIn', 'ArrowUp'], ['btnOut', 'ArrowDown'],
 ]) {
   const el = document.getElementById(id);
   const on = (e) => { e.preventDefault(); keys[code] = true; };
@@ -238,11 +238,11 @@ function frame(now) {
   last = now;
 
   // Controls → boat
-  const rudderIn = (keys.KeyA || keys.ArrowLeft ? -1 : 0) + (keys.KeyD || keys.ArrowRight ? 1 : 0);
+  const rudderIn = (keys.ArrowLeft ? -1 : 0) + (keys.ArrowRight ? 1 : 0);
   boat.rudder += (rudderIn - boat.rudder) * Math.min(1, (rudderIn ? 5 : 3.2) * dt);
   if (Math.abs(boat.rudder) < 0.01 && !rudderIn) boat.rudder = 0;
-  if (keys.KeyW || keys.ArrowUp) { boat.sheet = clamp(boat.sheet - 0.55 * dt, 2 * DEG, SHEET_MAX); boat.autoTrim = false; syncTrimBtn(); }
-  if (keys.KeyS || keys.ArrowDown) { boat.sheet = clamp(boat.sheet + 0.55 * dt, 2 * DEG, SHEET_MAX); boat.autoTrim = false; syncTrimBtn(); }
+  if (keys.ArrowUp) { boat.sheet = clamp(boat.sheet - 0.55 * dt, 2 * DEG, SHEET_MAX); boat.autoTrim = false; syncTrimBtn(); }
+  if (keys.ArrowDown) { boat.sheet = clamp(boat.sheet + 0.55 * dt, 2 * DEG, SHEET_MAX); boat.autoTrim = false; syncTrimBtn(); }
 
   // Physics substeps for stability
   const steps = 2;
