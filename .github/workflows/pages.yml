@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - claude/sailing-boat-simulator-3d-6rxz2w
   workflow_dispatch:
 
 permissions:
