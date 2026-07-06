@@ -39,6 +39,7 @@ is vendored in `vendor/`.
 | `A`/`D` or `←`/`→` | Rudder |
 | `W`/`S` or `↑`/`↓` | Sheet in / ease out |
 | `T` | Auto-trim assist |
+| `E` | Helm: wheel (car-like) · tiller (push opposite) |
 | `C` | Camera: chase · helm · tactical top-down |
 | `P` | Points-of-sail diagram |
 | `1`–`6` | Select lesson |

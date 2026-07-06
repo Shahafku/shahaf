@@ -44,6 +44,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyM') toggleAudio();
   if (e.code === 'KeyH') document.getElementById('helpPanel').classList.toggle('show');
   if (e.code === 'KeyP') document.getElementById('posPanel').classList.toggle('show');
+  if (e.code === 'KeyE') toggleHelm();
   if (e.code === 'Enter' && lessons.completed) nextLesson();
   if (e.code.startsWith('Digit')) {
     const i = Number(e.code.slice(5)) - 1;
@@ -58,6 +59,24 @@ function toggleAutoTrim() {
   document.getElementById('autoTrimBtn').classList.toggle('on', boat.autoTrim);
 }
 document.getElementById('autoTrimBtn').addEventListener('click', toggleAutoTrim);
+
+// ------------------------------------------------------------------ Helm
+// Two steering conventions. A *tiller* is pushed opposite the turn (left → bow
+// right); a *wheel* is turned into the turn like a car (left → bow left). The
+// game's base input mapping is tiller behaviour, so wheel mode just flips the
+// sign of the human helm input. Physics + AI keep the original convention.
+let helmMode = localStorage.getItem('helm') === 'wheel' ? 'wheel' : 'tiller';
+function syncHelmBtn() {
+  document.getElementById('helmBtn').textContent =
+    helmMode === 'wheel' ? '🛞 WHEEL' : '⚓ TILLER';
+}
+function toggleHelm() {
+  helmMode = helmMode === 'wheel' ? 'tiller' : 'wheel';
+  localStorage.setItem('helm', helmMode);
+  syncHelmBtn();
+}
+document.getElementById('helmBtn').addEventListener('click', toggleHelm);
+syncHelmBtn();
 
 // Touch / mouse buttons
 for (const [id, code] of [
@@ -238,7 +257,8 @@ function frame(now) {
   last = now;
 
   // Controls → boat
-  const rudderIn = (keys.KeyA || keys.ArrowLeft ? -1 : 0) + (keys.KeyD || keys.ArrowRight ? 1 : 0);
+  const helmSign = helmMode === 'wheel' ? -1 : 1;
+  const rudderIn = ((keys.KeyA || keys.ArrowLeft ? -1 : 0) + (keys.KeyD || keys.ArrowRight ? 1 : 0)) * helmSign;
   boat.rudder += (rudderIn - boat.rudder) * Math.min(1, (rudderIn ? 5 : 3.2) * dt);
   if (Math.abs(boat.rudder) < 0.01 && !rudderIn) boat.rudder = 0;
   if (keys.KeyW || keys.ArrowUp) { boat.sheet = clamp(boat.sheet - 0.55 * dt, 2 * DEG, SHEET_MAX); boat.autoTrim = false; syncTrimBtn(); }
