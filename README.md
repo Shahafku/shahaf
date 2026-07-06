@@ -49,7 +49,8 @@ is vendored in `vendor/`.
 ## The physics (short version)
 
 Everything the HUD shows is computed from a real (simplified) sailing model,
-documented in [`docs/RESEARCH.md`](docs/RESEARCH.md):
+documented in [`docs/RESEARCH.md`](docs/RESEARCH.md). For an interactive visualization
+of how lift, drag, and drive vectors compose to steer a yacht, open [`force-compass.html`](force-compass.html) — drag the wind direction around a boat and watch the forces resolve in real time, with a performance polar showing boat speed at every true wind angle.
 
 - **Apparent wind** = true wind − boat velocity, recomputed every frame; sails
   respond to *apparent*, not true wind.
@@ -65,14 +66,15 @@ documented in [`docs/RESEARCH.md`](docs/RESEARCH.md):
 ## Project layout
 
 ```
-index.html        UI shell + HUD DOM
-styles.css        HUD styling
-src/main.js       renderer, cameras, input, audio, game loop
-src/physics.js    wind + yacht dynamics (the model)
-src/boat.js       procedural yacht, wind-shaped cloth sails, wake
-src/ocean.js      water/sky shaders, buoys
-src/hud.js        wind rose, trim gauge, instruments, coach tips
-src/lessons.js    the six-lesson curriculum
-docs/RESEARCH.md  nautical rules & physics research behind the model
-vendor/           three.js (vendored, offline-friendly)
+index.html            UI shell + HUD DOM
+force-compass.html    interactive physics visualization (drag wind, see forces)
+styles.css            HUD styling
+src/main.js           renderer, cameras, input, audio, game loop
+src/physics.js        wind + yacht dynamics (the model)
+src/boat.js           procedural yacht, wind-shaped cloth sails, wake
+src/ocean.js          water/sky shaders, buoys
+src/hud.js            wind rose, trim gauge, instruments, coach tips
+src/lessons.js        the six-lesson curriculum
+docs/RESEARCH.md      nautical rules & physics research behind the model
+vendor/               three.js (vendored, offline-friendly)
 ```
