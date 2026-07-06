@@ -115,11 +115,16 @@ export class HUD {
       ctx.moveTo(0, -R - 6);
       ctx.lineTo(0, -R - (d % 90 === 0 ? 14 : 10));
       ctx.stroke();
+      ctx.textAlign = 'center';
       if (d % 90 === 0) {
         ctx.fillStyle = d === 0 ? '#ff8f66' : 'rgba(200, 225, 245, 0.85)';
         ctx.font = 'bold 12px system-ui';
-        ctx.textAlign = 'center';
         ctx.fillText('NESW'[d / 90], 0, -R - 18);
+      } else {
+        // degree numbers between the cardinals, like a real compass card
+        ctx.fillStyle = 'rgba(200, 225, 245, 0.6)';
+        ctx.font = '9px system-ui';
+        ctx.fillText(String(d), 0, -R - 15);
       }
       ctx.restore();
     }

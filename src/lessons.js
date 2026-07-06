@@ -15,11 +15,11 @@ export const LESSONS = [
     marks: [{ x: 260, z: 10 }],
     steps: [
       {
-        text: 'Your sail is flapping (<b>luffing</b>) — it makes no power. Press <kbd>W</kbd>/<kbd>↑</kbd> to sheet in until it fills and the trim bar turns green.',
+        text: 'Your sail is flapping (<b>luffing</b>) — it makes no power. Press <kbd>↑</kbd> to sheet in until it fills and the trim bar turns green.',
         done: (b) => b.efficiency > 0.7 && b.speed > 1.2,
       },
       {
-        text: 'Trim looks good! Steer with <kbd>A</kbd>/<kbd>D</kbd> toward the glowing ring. Watch the speed climb.',
+        text: 'Trim looks good! Steer with <kbd>←</kbd>/<kbd>→</kbd> toward the glowing ring. Watch the speed climb.',
         done: (b, ctx) => ctx.distToMark < 120,
       },
       { text: 'Sail through the ring to finish.', done: () => false },
@@ -97,7 +97,7 @@ export const LESSONS = [
     ],
     steps: [
       {
-        text: 'Bear away onto a <b>broad reach</b> (wind over the quarter, ~130–150°) and ease the sheet way out with <kbd>S</kbd>/<kbd>↓</kbd>.',
+        text: 'Bear away onto a <b>broad reach</b> (wind over the quarter, ~130–150°) and ease the sheet way out with <kbd>↓</kbd>.',
         done: (b) => Math.abs(b.twa) > 115 * DEG && b.efficiency > 0.55,
       },
       {
@@ -290,9 +290,9 @@ export class LessonManager {
     } else if (boat.byTheLee) {
       hud.setTip('⚠️ <b>Sailing by the lee</b> — the wind is creeping behind the boom. Head up a touch or gybe deliberately before the boom does it for you.', 'lee');
     } else if (boat.luffing && Math.abs(boat.twa) > 35 * DEG) {
-      hud.setTip('💨 Sail is <b>luffing</b> — it’s a flag, not a wing. Sheet in (<kbd>W</kbd>/<kbd>↑</kbd>) until it fills.', 'luff');
+      hud.setTip('💨 Sail is <b>luffing</b> — it’s a flag, not a wing. Sheet in (<kbd>↑</kbd>) until it fills.', 'luff');
     } else if (boat.stalled) {
-      hud.setTip('🛑 Sail is <b>stalled</b> — strapped in too tight for this angle. Ease out (<kbd>S</kbd>/<kbd>↓</kbd>) and feel the boat stand up and speed on.', 'stall');
+      hud.setTip('🛑 Sail is <b>stalled</b> — strapped in too tight for this angle. Ease out (<kbd>↓</kbd>) and feel the boat stand up and speed on.', 'stall');
     } else if (Math.abs(boat.heel) > 30 * DEG) {
       hud.setTip('⛵ <b>Too much heel</b> slows you down. Ease the sheet or head up slightly to depower.', 'heel');
     } else if (boat.efficiency > 0.9 && boat.speed > 1.5) {
