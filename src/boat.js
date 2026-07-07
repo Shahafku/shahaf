@@ -233,7 +233,8 @@ export class BoatView {
       const chord = BOOM_LEN * Math.pow(1 - u, 0.92);
       const ax = 0, ay = u * H, az = -chord; // leech point in boom-local space
       // Flow state decides the ribbon's shape.
-      const chaos = boat.luffing ? 1 : boat.stalled ? 0.75 : 0.12;
+      // Partial luff already unsettles the telltales before the full flog.
+      const chaos = Math.max(boat.stalled ? 0.75 : 0.12, boat.luff ?? (boat.luffing ? 1 : 0));
       const pos = tt.line.geometry.attributes.position.array;
       let px = ax, py = ay, pz = az;
       pos[0] = px; pos[1] = py; pos[2] = pz;
@@ -251,9 +252,16 @@ export class BoatView {
   }
 
   // Reshape a sail grid. luffFn(u)->Vector3 point on the luff, chordFn(u)->length,
-  // camber & flap describe belly depth (signed toward ±X) and flogging.
+  // camber & flap describe belly depth (signed toward ±X) and luff depth 0..1.
   _deformSail(mesh, rows, cols, luffFn, chordFn, camber, flap, t) {
     const pos = mesh.geometry.attributes.position.array;
+    // Luffing is progressive, and it starts at the luff: first a soft
+    // backwinded bubble right behind the leading edge, then detached flow
+    // (flutter) eats aft along the chord until the whole sail flogs.
+    const reach = 0.22 + 0.78 * flap;          // chord fraction that lost flow
+    const tempo = 13 + 9 * flap;               // ripple → violent flog
+    const bubbleAmp = 0.20 * flap * (1 - flap); // backwinding peaks mid-luff
+    const bellySign = Math.sign(camber) || 1;
     let i = 0;
     for (let r = 0; r < rows; r++) {
       const u = r / (rows - 1);
@@ -262,11 +270,11 @@ export class BoatView {
       for (let c = 0; c < cols; c++) {
         const v = c / (cols - 1);
         const belly = Math.sin(Math.PI * v) * camber * chord;
-        const flutter =
-          flap * chord * 0.16 *
-          Math.sin(10 * v + 7 * u - t * 21) *
-          Math.sin(Math.PI * Math.min(1, v * 1.6)); // luff area flogs hardest
-        pos[i++] = L.x + belly + flutter;
+        // Dome over the detached forward section, zero aft of `reach`
+        const lw = v >= reach ? 0 : Math.sin((Math.PI * v) / reach);
+        const flutter = flap * chord * 0.16 * Math.sin(10 * v + 7 * u - t * tempo) * lw;
+        const bubble = -bellySign * bubbleAmp * chord * lw;
+        pos[i++] = L.x + belly + bubble + flutter;
         pos[i++] = L.y;
         pos[i++] = L.z - v * chord;
       }
@@ -355,8 +363,10 @@ export class BoatView {
     this.windex.rotation.y = -boat.awa;
 
     // Sail shapes
-    const luffing = boat.luffing ? 1 : 0;
-    this._flap = (this._flap ?? 0) + ((luffing || Math.abs(boat.awa) < 0.15 ? 1 : 0) - (this._flap ?? 0)) * Math.min(1, 6 * dt);
+    // Flap depth follows the physics' continuous luff fraction (0 = drawing
+    // cleanly, 1 = fully flogging); head-to-wind always flogs completely.
+    const luffTarget = Math.max(boat.luff ?? (boat.luffing ? 1 : 0), Math.abs(boat.awa) < 0.15 ? 1 : 0);
+    this._flap = (this._flap ?? 0) + (luffTarget - (this._flap ?? 0)) * Math.min(1, 6 * dt);
     const flap = this._flap;
     const boomSign = Math.sign(boat.boom) || 1; // + = boom carried to starboard
     // Sail bellies to leeward (the side the boom is on). +boom sweeps the tip

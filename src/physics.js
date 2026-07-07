@@ -107,6 +107,7 @@ export class Boat {
     this.awa = 0; this.aws = 0; this.twa = 0;
     this.aoa = 0; this.coef = 0; this.drive = 0; this.sideForce = 0;
     this.luffing = false; this.stalled = false; this.inIrons = false;
+    this.luff = 0;          // continuous luff depth 0..1 (visuals)
     this.byTheLee = false; this.gybeSwing = 0; // boom sweep speed (visual/audio)
     this.efficiency = 0; // 0..1 trim quality on this point of sail
     this.distance = 0;   // meters logged
@@ -159,6 +160,11 @@ export class Boat {
     this.aoa = Math.max(0, absAWA - Math.abs(this.boom));
     this.coef = liftCoef(this.aoa);
     this.luffing = absAWA < 100 * DEG && this.aoa < 6 * DEG;
+    // Continuous luff depth for the sail visuals. Attached flow needs a few
+    // degrees of attack; as it fades the luff starts to bubble well before
+    // the hard LUFFING warning, then the whole sail flogs at aoa ≈ 0.
+    // Downwind (parachute regime) the sail never luffs.
+    this.luff = absAWA < 100 * DEG ? clamp(1 - this.aoa / (9 * DEG), 0, 1) : 0;
     this.stalled = this.aoa > 40 * DEG && absAWA < 120 * DEG;
     this.byTheLee = absAWA > 165 * DEG || (absAWA > 140 * DEG && Math.sign(this.boom) === windSide);
 
