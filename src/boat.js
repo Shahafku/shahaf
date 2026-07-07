@@ -92,14 +92,35 @@ export class BoatView {
     coaming.position.set(0, 0.95, -2.6);
     this.heelGroup.add(coaming);
 
-    // Helm: wheel pedestal
-    const wheel = new THREE.Mesh(
-      new THREE.TorusGeometry(0.42, 0.035, 8, 24),
-      new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 0.5 })
-    );
+    // Helm: a wheel (shown in wheel mode) and a tiller (shown in tiller mode).
+    const helmMat = new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 0.5 });
+
+    // Wheel pedestal
+    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.035, 8, 24), helmMat);
     wheel.position.set(0, 1.35, -3.1);
     this.heelGroup.add(wheel);
     this.wheel = wheel;
+
+    // Tiller: a lever pivoting on the rudder post, reaching forward into the
+    // cockpit. The group pivots at the post; the arm points forward (+Z) so a
+    // yaw of the group swings the grip end port/starboard.
+    this.tiller = new THREE.Group();
+    this.tiller.position.set(0, 1.02, STERN_Z + 0.55);
+    const TILLER_LEN = 1.9;
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, TILLER_LEN, 8), helmMat);
+    arm.rotation.x = Math.PI / 2;          // lay the cylinder along +Z
+    arm.position.set(0, 0.06, TILLER_LEN / 2);
+    this.tiller.add(arm);
+    const grip = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.055, 0.055, 0.3, 8),
+      new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.7 })
+    );
+    grip.rotation.x = Math.PI / 2;
+    grip.position.set(0, 0.06, TILLER_LEN - 0.12);
+    this.tiller.add(grip);
+    this.tiller.visible = false;           // wheel is the default
+    this.heelGroup.add(this.tiller);
+    this.helmMode = 'wheel';
 
     // Keel fin + bulb
     const keel = new THREE.Mesh(
@@ -331,6 +352,14 @@ export class BoatView {
     this.wakeAge[i] = 1;
   }
 
+  // Swap the helm graphic between the wheel and the tiller.
+  setHelm(mode) {
+    this.helmMode = mode === 'tiller' ? 'tiller' : 'wheel';
+    const isWheel = this.helmMode === 'wheel';
+    this.wheel.visible = isWheel;
+    this.tiller.visible = !isWheel;
+  }
+
   // --------------------------------------------------------------- Update
   update(dt, boat, wind, envTime) {
     this.time += dt;
@@ -351,9 +380,11 @@ export class BoatView {
     this.heelGroup.rotation.z = boat.heel;
     this.heelGroup.rotation.x = pitch;
 
-    // Rudder & wheel
+    // Rudder, wheel & tiller. A wheel turns into the turn; a tiller is pushed
+    // to the opposite side (rudder to starboard → grip swings to port = +X).
     this.rudderMesh.rotation.y = boat.rudder * 0.6;
     this.wheel.rotation.z = -boat.rudder * 2.2;
+    this.tiller.rotation.y = boat.rudder * 0.9;
 
     // Boom: physics +boom = starboard; rotation.y = +θ swings the aft-pointing
     // tip (local -Z) to local -X = visual starboard.
