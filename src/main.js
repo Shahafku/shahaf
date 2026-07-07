@@ -61,14 +61,16 @@ function toggleAutoTrim() {
 document.getElementById('autoTrimBtn').addEventListener('click', toggleAutoTrim);
 
 // ------------------------------------------------------------------ Helm
-// Two steering conventions. A *tiller* is pushed opposite the turn (left → bow
-// right); a *wheel* is turned into the turn like a car (left → bow left). The
-// game's base input mapping is tiller behaviour, so wheel mode just flips the
-// sign of the human helm input. Physics + AI keep the original convention.
+// Two steering conventions. A *wheel* is turned into the turn like a car
+// (right → bow right); a *tiller* is pushed opposite the turn (right → bow
+// left). The base input mapping (ArrowRight → rudder to starboard → bow right)
+// is wheel behaviour, so tiller mode flips the sign of the human helm input.
+// Physics + AI keep the original convention.
 let helmMode = localStorage.getItem('helm') === 'wheel' ? 'wheel' : 'tiller';
 function syncHelmBtn() {
   document.getElementById('helmBtn').textContent =
     helmMode === 'wheel' ? '🛞 WHEEL' : '⚓ TILLER';
+  view.setHelm(helmMode);
 }
 function toggleHelm() {
   helmMode = helmMode === 'wheel' ? 'tiller' : 'wheel';
@@ -257,7 +259,7 @@ function frame(now) {
   last = now;
 
   // Controls → boat
-  const helmSign = helmMode === 'wheel' ? -1 : 1;
+  const helmSign = helmMode === 'wheel' ? 1 : -1;
   const rudderIn = ((keys.ArrowLeft ? -1 : 0) + (keys.ArrowRight ? 1 : 0)) * helmSign;
   boat.rudder += (rudderIn - boat.rudder) * Math.min(1, (rudderIn ? 5 : 3.2) * dt);
   if (Math.abs(boat.rudder) < 0.01 && !rudderIn) boat.rudder = 0;
