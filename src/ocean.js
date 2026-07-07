@@ -293,6 +293,54 @@ export function makeBuoy(color = 0xff5a1f) {
   return g;
 }
 
+// A lifebuoy (גלגל הצלה) adrift for the man-overboard exercises: orange torus
+// with white grab bands, a small strobe, and a pulsing marker ring like the
+// course buoys (it stands in for a dan buoy's real-world visibility).
+export function makeLifeRing() {
+  const g = new THREE.Group();
+  const orange = new THREE.MeshStandardMaterial({ color: 0xff5a1f, roughness: 0.55 });
+  const torus = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.14, 10, 28), orange);
+  torus.rotation.x = -Math.PI / 2;
+  g.add(torus);
+  const white = new THREE.MeshStandardMaterial({ color: 0xf4f6f8, roughness: 0.55 });
+  for (let i = 0; i < 4; i++) {
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.3, 0.3), white);
+    const a = i * Math.PI / 2 + Math.PI / 4;
+    band.position.set(Math.cos(a) * 0.45, 0, Math.sin(a) * 0.45);
+    band.rotation.y = -a;
+    g.add(band);
+  }
+  const strobe = new THREE.Mesh(
+    new THREE.SphereGeometry(0.09, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xaefcff })
+  );
+  strobe.position.y = 0.22;
+  g.add(strobe);
+  g.userData.strobe = strobe;
+
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(2.6, 3.4, 48),
+    new THREE.MeshBasicMaterial({ color: 0xffb14f, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.1;
+  g.add(ring);
+  g.userData.ring = ring;
+  return g;
+}
+
+export function bobLifeRing(ring, t) {
+  const { x, z } = ring.position;
+  ring.position.y = waveHeight(x, z, t) + 0.05;
+  ring.rotation.x = 0.10 * Math.sin(t * 1.3 + x);
+  ring.rotation.z = 0.10 * Math.cos(t * 1.05 + z);
+  ring.userData.strobe.material.color.setHex(Math.sin(t * 7) > 0.4 ? 0xaefcff : 0x2a4a52);
+  const m = ring.userData.ring;
+  const s = 1 + 0.1 * Math.sin(t * 2.6);
+  m.scale.set(s, s, 1);
+  m.material.opacity = 0.35 + 0.2 * Math.sin(t * 2.6);
+}
+
 export function bobBuoy(buoy, t, windDirFrom) {
   const { x, z } = buoy.position;
   buoy.position.y = waveHeight(x, z, t) - 0.15;

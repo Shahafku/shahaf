@@ -53,7 +53,10 @@
 
 <!-- Right rail -->
 <div id="rail">
+  <div class="pickhead">LEARN</div>
   <div id="lessonPicker" class="picker"></div>
+  <div class="pickhead exam">EXAM · מבחן</div>
+  <div id="testPicker" class="picker"></div>
   <button id="autoTrimBtn" class="railbtn" title="Auto-trim (T)">AUTO<br/>TRIM</button>
   <button id="helmBtn" class="railbtn wide" title="Helm: wheel or tiller (E)">🛞 WHEEL</button>
   <button id="camBtn" class="railbtn wide" title="Camera (C)">📷 CHASE</button>
@@ -99,7 +102,8 @@
     <tr><td><kbd>E</kbd></td><td>helm: wheel (car-like) · tiller (opposite)</td></tr>
     <tr><td><kbd>C</kbd></td><td>camera: chase · helm · tactical</td></tr>
     <tr><td><kbd>P</kbd></td><td>points-of-sail diagram</td></tr>
-    <tr><td><kbd>1</kbd>–<kbd>6</kbd></td><td>choose lesson</td></tr>
+    <tr><td><kbd>1</kbd>–<kbd>8</kbd></td><td>choose lesson</td></tr>
+    <tr><td><kbd>⇧1</kbd>–<kbd>⇧6</kbd></td><td>choose exam test</td></tr>
     <tr><td><kbd>M</kbd></td><td>sound on/off</td></tr>
     <tr><td>drag / wheel</td><td>orbit / zoom (chase cam)</td></tr>
   </table>
@@ -111,9 +115,11 @@
 <div id="introOverlay">
   <div class="card">
     <h2>⛵ Welcome aboard</h2>
-    <p>This is a sailing school on open water. By the end you'll know
-      <b>how wind behaves</b> and how to take a yacht <b>anywhere</b> in it —
-      upwind, downwind, and through every turn.</p>
+    <p>This is a sailing school built like the <b>Israeli practical exam</b> (המבחן המעשי).
+      Two tracks on the right rail: <b>LEARN</b> — lessons that explain and coach you through
+      each skill — and <b>EXAM · מבחן</b> — the same six exercises as the real test:
+      goal only, no coaching aids, pass or fail.</p>
+    <p>Finish a lesson to unlock its test. Start with Lesson 1.</p>
     <table class="introkeys">
       <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>steer (rudder)</td></tr>
       <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>sheet the sails in / out</td></tr>
@@ -133,7 +139,18 @@
     <div id="completeText"></div>
     <div class="btnrow">
       <button id="retryBtn">↻ Sail it again</button>
-      <button id="nextLessonBtn" class="primary">Next lesson ⏎</button>
+      <button id="nextLessonBtn" class="primary">Next ⏎</button>
+    </div>
+  </div>
+</div>
+
+<!-- Test failed overlay -->
+<div id="failOverlay">
+  <div class="card">
+    <div id="failText"></div>
+    <div class="btnrow">
+      <button id="reviewBtn">📖 Review the lesson</button>
+      <button id="retakeBtn" class="primary">↻ Retake ⏎</button>
     </div>
   </div>
 </div>
