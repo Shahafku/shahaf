@@ -122,6 +122,8 @@ export class BoatView {
     this.heelGroup.add(this.tiller);
     this.helmMode = 'wheel';
 
+    this._buildCrew();
+
     // Keel fin + bulb
     const keel = new THREE.Mesh(
       new THREE.BoxGeometry(0.14, 1.9, 1.7),
@@ -137,6 +139,44 @@ export class BoatView {
     );
     this.rudderMesh.position.set(0, -0.55, STERN_Z + 0.5);
     this.heelGroup.add(this.rudderMesh);
+  }
+
+  // ---------------------------------------------------------------- Crew
+  // A crewmate stationed in the cockpit. For the man-overboard exercises the
+  // throwing arm pivots at the shoulder to hurl the lifebuoy over the quarter.
+  _buildCrew() {
+    this.crew = new THREE.Group();
+    this.crew.position.set(0.55, 0.95, -1.9); // starboard side of the cockpit
+    const skin = new THREE.MeshStandardMaterial({ color: 0xc9986a, roughness: 0.7 });
+    const vest = new THREE.MeshStandardMaterial({ color: 0xd8352a, roughness: 0.6 });
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.5, 4, 10), vest);
+    torso.position.y = 0.62;
+    this.crew.add(torso);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), skin);
+    head.position.y = 1.18;
+    this.crew.add(head);
+    // Arm pivots at the shoulder; rest pose hangs down.
+    this.crewArm = new THREE.Group();
+    this.crewArm.position.set(-0.24, 0.95, 0);
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.5, 4, 8), vest);
+    arm.position.y = -0.3;
+    this.crewArm.add(arm);
+    this.crew.add(this.crewArm);
+    this.crewArm.rotation.z = -0.25;
+    this.heelGroup.add(this.crew);
+  }
+
+  // pose 'idle' | 'throw'; k = 0..1 phase of the throw (wind up → release).
+  setCrewPose(pose, k = 0) {
+    if (pose === 'throw') {
+      // Swing the arm up and over the side, peaking just before release.
+      const swing = Math.sin(Math.min(1, k) * Math.PI);
+      this.crewArm.rotation.z = -0.25 - 2.4 * swing;
+      this.crew.rotation.y = -0.6 * swing; // twist toward the quarter
+    } else {
+      this.crewArm.rotation.z = -0.25;
+      this.crew.rotation.y = 0;
+    }
   }
 
   // ----------------------------------------------------------------- Rig

@@ -4,7 +4,8 @@ import { Wind, Boat, DEG, SHEET_MAX, clamp } from './physics.js';
 import { Environment } from './ocean.js';
 import { BoatView } from './boat.js';
 import { HUD } from './hud.js';
-import { LESSONS, LessonManager } from './lessons.js';
+import { LessonManager } from './lessons.js';
+import { LESSONS, TESTS, ALL, byId } from './curriculum.js';
 import { TrafficBoat } from './traffic.js';
 import { WindStreaks } from './ocean.js';
 
@@ -24,7 +25,7 @@ const wind = new Wind(0, 6.2);
 const boat = new Boat();
 const view = new BoatView(scene);
 const hud = new HUD();
-const lessons = new LessonManager(scene, hud);
+const lessons = new LessonManager(scene, hud, view);
 const traffic = new TrafficBoat(scene);
 const streaks = new WindStreaks(scene);
 
@@ -45,10 +46,12 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyH') document.getElementById('helpPanel').classList.toggle('show');
   if (e.code === 'KeyP') document.getElementById('posPanel').classList.toggle('show');
   if (e.code === 'KeyE') toggleHelm();
-  if (e.code === 'Enter' && lessons.completed) nextLesson();
+  if (e.code === 'Enter' && lessons.completed) nextItem();
+  if (e.code === 'Enter' && lessons.failed) lessons.start(lessons.lesson(), boat, wind);
   if (e.code.startsWith('Digit')) {
     const i = Number(e.code.slice(5)) - 1;
-    if (i >= 0 && i < LESSONS.length) selectLesson(i);
+    const list = e.shiftKey ? TESTS : LESSONS;
+    if (i >= 0 && i < list.length) selectItem(list[i]);
   }
   if (['ArrowUp', 'ArrowDown', 'Space'].includes(e.code)) e.preventDefault();
 });
@@ -202,26 +205,39 @@ function updateAudio() {
 }
 
 // ------------------------------------------------------------- Lessons UI
-const picker = document.getElementById('lessonPicker');
-LESSONS.forEach((L, i) => {
-  const b = document.createElement('button');
-  b.textContent = L.free ? '∞' : String(i + 1);
-  b.title = L.title;
-  b.addEventListener('click', () => selectLesson(i));
-  picker.appendChild(b);
-});
-function selectLesson(i) {
-  if (i > lessons.unlocked && !LESSONS[i].free) {
-    hud.setTip(`🔒 Finish the earlier lessons to unlock <b>${LESSONS[i].title}</b>.`, 'locked' + i);
+function buildPicker(el, items, label) {
+  items.forEach((item, i) => {
+    const b = document.createElement('button');
+    b.textContent = item.free ? '∞' : label(i);
+    b.title = item.title;
+    b.addEventListener('click', () => selectItem(item));
+    el.appendChild(b);
+  });
+}
+buildPicker(document.getElementById('lessonPicker'), LESSONS, (i) => String(i + 1));
+buildPicker(document.getElementById('testPicker'), TESTS, (i) => 'T' + (i + 1));
+
+function selectItem(item) {
+  if (!lessons.isUnlocked(item)) {
+    const need = item.type === 'test'
+      ? 'Finish the matching lesson first'
+      : 'Finish the earlier lessons first';
+    // setTip is muted in exam mode — the mark info line is always visible.
+    hud.setTip(`🔒 ${need} to unlock <b>${item.title}</b>.`, 'locked' + item.id);
+    document.getElementById('markInfo').textContent = `🔒 ${need} — ${item.title}`;
     return;
   }
-  lessons.start(i, boat, wind);
+  lessons.start(item, boat, wind);
 }
-function nextLesson() {
-  selectLesson(Math.min(lessons.index + 1, LESSONS.length - 1));
+function nextItem() {
+  selectItem(lessons.nextTarget() || byId('free'));
 }
-document.getElementById('nextLessonBtn').addEventListener('click', nextLesson);
-document.getElementById('retryBtn').addEventListener('click', () => lessons.start(lessons.index, boat, wind));
+document.getElementById('nextLessonBtn').addEventListener('click', nextItem);
+document.getElementById('retryBtn').addEventListener('click', () => lessons.start(lessons.lesson(), boat, wind));
+document.getElementById('retakeBtn').addEventListener('click', () => lessons.start(lessons.lesson(), boat, wind));
+document.getElementById('reviewBtn').addEventListener('click', () => {
+  if (lessons.reviewTarget) lessons.start(lessons.reviewTarget, boat, wind);
+});
 
 // Wind panel (free sail)
 const windDirInput = document.getElementById('windDir');
@@ -244,10 +260,14 @@ document.getElementById('setSailBtn').addEventListener('click', () => {
 });
 
 // Debug/console handle (also used by automated tests)
-window.__sail = { boat, wind, lessons, LESSONS, view, traffic };
+window.__sail = {
+  boat, wind, lessons, LESSONS, TESTS, ALL, byId, view, traffic,
+  select: (id) => selectItem(byId(id)),
+  mob: () => lessons.mobCtl,
+};
 
 // ------------------------------------------------------------------- Loop
-lessons.start(0, boat, wind);
+lessons.start(LESSONS[0], boat, wind);
 document.getElementById('camBtn').textContent = '📷 ' + camModes[0];
 
 let last = performance.now();

@@ -23,11 +23,24 @@ export class HUD {
     this._tipKey = '';
     this.posPanel = $('posPanel');
     this.posCtx = $('posDiagram').getContext('2d');
+    this.mode = 'full';
+  }
+
+  // 'full' = lessons: every aid visible. 'exam' = tests: no trim bar, no
+  // coach tips, no status badge — only real-boat instruments remain.
+  setMode(mode) {
+    this.mode = mode;
+    document.body.classList.toggle('exam-mode', mode === 'exam');
+    if (mode === 'exam') {
+      this.statusEl.style.opacity = 0;
+      this.tipEl.innerHTML = '';
+      this._tipKey = '';
+    }
   }
 
   update(dt, boat, wind) {
     this._drawRose(boat, wind);
-    this._drawTrim(boat);
+    if (this.mode !== 'exam') this._drawTrim(boat);
     if (this.posPanel.classList.contains('show')) this._drawPos(boat);
 
     const kn = (boat.speed * KNOTS);
@@ -45,6 +58,7 @@ export class HUD {
     this.awsEl.textContent = (boat.aws * KNOTS).toFixed(0);
 
     // Status badge
+    if (this.mode === 'exam') return;
     let status = null, cls = '';
     if (boat.inIrons) { status = 'IN IRONS'; cls = 'bad'; }
     else if (boat.luffing) { status = 'LUFFING — sheet in'; cls = 'warn'; }
@@ -61,6 +75,7 @@ export class HUD {
   }
 
   setTip(text, key = text) {
+    if (this.mode === 'exam') return;
     if (key === this._tipKey) return;
     this._tipKey = key;
     this.tipEl.innerHTML = text;

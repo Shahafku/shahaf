@@ -50,6 +50,20 @@ kbd {
 }
 .markinfo { margin-top: 8px; font-size: 12px; color: #7dffb5; font-variant-numeric: tabular-nums; }
 
+/* ---------------- Exam mode ----------------
+   Tests hide the coaching aids: mainsheet trim bar, coach tip, status badge.
+   Real-boat instruments (wind rose, speed/heading, mark info) stay. */
+body.exam-mode #trimWrap { display: none; }
+body.exam-mode #statusBadge { visibility: hidden; }
+body.exam-mode #lessonPanel { border-color: rgba(255, 178, 80, 0.4); }
+body.exam-mode #lessonTitle { color: #ffc270; }
+body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-color: #ffb14f; }
+.exampill {
+  display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px;
+  font-size: 10px; letter-spacing: 1px; vertical-align: 2px;
+  background: rgba(255, 178, 80, 0.18); border: 1px solid rgba(255, 178, 80, 0.5); color: #ffc270;
+}
+
 /* ---------------- Status ---------------- */
 #statusWrap {
   position: fixed; top: 44px; left: 50%; transform: translateX(-50%);
@@ -117,10 +131,22 @@ kbd {
 
 /* ---------------- Right rail ---------------- */
 #rail {
-  position: fixed; right: 14px; top: 300px; z-index: 4;
+  position: fixed; right: 14px; top: 290px; z-index: 4;
   display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+  max-height: calc(100vh - 304px); overflow-y: auto; scrollbar-width: none;
 }
-.picker { display: flex; flex-direction: column; gap: 6px; }
+#rail::-webkit-scrollbar { display: none; }
+.pickhead {
+  font-size: 9px; letter-spacing: 1.6px; font-weight: 700; opacity: 0.65;
+  text-align: right; padding-right: 4px; text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+.pickhead.exam { color: #ffc270; opacity: 0.9; margin-top: 6px; }
+.picker { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.picker button { min-height: 34px; }
+#testPicker button { border-color: rgba(255, 178, 80, 0.35); color: #ffd9a8; font-size: 11px; }
+#testPicker button:hover { background: rgba(115, 80, 30, 0.7); }
+#testPicker button.active { border-color: #ffb14f; color: #ffc270; background: rgba(140, 90, 30, 0.55); }
+#testPicker button.done::after { content: ' ✓'; color: #7dffb5; }
 .picker button, .railbtn {
   min-width: 44px; min-height: 40px;
   background: rgba(7, 21, 33, 0.72); color: #cfe6f7;
@@ -217,6 +243,29 @@ kbd {
 }
 .btnrow button.primary { background: #1e6fb8; border-color: #4fa8ff; }
 .btnrow button:hover { filter: brightness(1.2); }
+
+/* ---------------- Fail overlay ---------------- */
+#failOverlay {
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  background: rgba(20, 6, 6, 0.55); z-index: 10;
+  backdrop-filter: blur(3px);
+}
+#failOverlay.show { display: flex; }
+#failOverlay .card {
+  width: min(520px, 88vw);
+  background: rgba(40, 14, 16, 0.95);
+  border: 1px solid rgba(255, 122, 110, 0.4);
+  border-radius: 18px; padding: 28px 30px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: cardIn 0.4s ease-out;
+}
+#failOverlay h2 { color: #ff8a80; font-size: 20px; margin-bottom: 10px; }
+#failOverlay p { font-size: 14px; line-height: 1.55; opacity: 0.92; }
+.failreason {
+  background: rgba(255, 122, 110, 0.10); border-left: 3px solid #ff7a6e;
+  padding: 8px 10px; border-radius: 0 8px 8px 0; margin-top: 8px;
+}
+#failOverlay .btnrow button.primary { background: #a8402f; border-color: #ff8a70; }
 
 /* ---------------- Small screens ---------------- */
 @media (max-width: 900px) {
