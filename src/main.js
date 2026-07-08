@@ -164,6 +164,16 @@ document.getElementById('audioBtn').addEventListener('click', toggleAudio);
 document.getElementById('posBtn').addEventListener('click', () =>
   document.getElementById('posPanel').classList.toggle('show'));
 
+// ------------------------------------------------------------ Mobile menu
+// On phones the right rail (lesson picker, exam picker, tool buttons) lives in
+// a slide-in drawer so the sailing screen stays uncluttered. On desktop the
+// button and backdrop are display:none and this is inert.
+const menuBackdrop = document.getElementById('menuBackdrop');
+function setMenu(open) { document.body.classList.toggle('menu-open', open); }
+document.getElementById('menuBtn').addEventListener('click', () =>
+  setMenu(!document.body.classList.contains('menu-open')));
+menuBackdrop.addEventListener('click', () => setMenu(false));
+
 function makeAudio() {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   const master = ctx.createGain();
@@ -228,6 +238,7 @@ function selectItem(item) {
     return;
   }
   lessons.start(item, boat, wind);
+  setMenu(false); // collapse the mobile drawer once we're under way
 }
 function nextItem() {
   selectItem(lessons.nextTarget() || byId('free'));
