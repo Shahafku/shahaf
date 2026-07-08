@@ -174,6 +174,20 @@ document.getElementById('menuBtn').addEventListener('click', () =>
   setMenu(!document.body.classList.contains('menu-open')));
 menuBackdrop.addEventListener('click', () => setMenu(false));
 
+// Mainsheet trim bar can be minimized on phones (the toggle is desktop-hidden).
+const trimToggle = document.getElementById('trimToggle');
+if (localStorage.getItem('trimMin') === '1') {
+  document.body.classList.add('trim-min');
+  trimToggle.textContent = '+';
+  trimToggle.title = 'Show mainsheet trim';
+}
+trimToggle.addEventListener('click', () => {
+  const min = document.body.classList.toggle('trim-min');
+  trimToggle.textContent = min ? '+' : '−';
+  trimToggle.title = min ? 'Show mainsheet trim' : 'Minimize mainsheet trim';
+  localStorage.setItem('trimMin', min ? '1' : '0');
+});
+
 function makeAudio() {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   const master = ctx.createGain();

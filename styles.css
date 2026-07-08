@@ -170,7 +170,7 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
 #windPanel input[type="range"] { width: 100%; accent-color: #4fa8ff; }
 
 /* ---------------- Mobile menu (phones only; hidden on desktop) ---------------- */
-#menuBtn, #menuBackdrop { display: none; }
+#menuBtn, #menuBackdrop, #trimToggle { display: none; }
 
 /* ---------------- Touch ---------------- */
 #touch {
@@ -368,9 +368,19 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
   /* ---- Transient status: a centred toast over open water, clear of the banner ---- */
   #statusWrap { top: 54vh; bottom: auto; }
 
-  /* ---- Coach tip: a band just above the thumb controls (trim gauge hidden) ---- */
-  #trimWrap { left: 10px; right: 10px; bottom: 96px; transform: none; align-items: center; }
-  #trimBar { display: none; }
+  /* ---- Mainsheet trim + coach tip: a band above the thumb controls.
+     The trim gauge stays, with a − toggle to minimize it down to just the tip. ---- */
+  #trimWrap { left: 10px; right: 10px; bottom: 96px; transform: none; align-items: center; gap: 6px; }
+  #trimBar { display: block; width: min(340px, 100%); height: auto; }
+  body.trim-min #trimBar { display: none; }
+  #trimToggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    align-self: flex-end; width: 30px; height: 26px; border-radius: 8px;
+    background: rgba(7, 21, 33, 0.82); color: #cfe6f7;
+    border: 1px solid rgba(140, 190, 230, 0.3);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    font-size: 18px; line-height: 1; cursor: pointer;
+  }
   .tip { max-width: 100%; font-size: 12px; padding: 7px 12px; }
 
   /* ---- Touch controls: rudder and sheet in the bottom corners ---- */
