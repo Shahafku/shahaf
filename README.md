@@ -73,9 +73,12 @@ styles.css            HUD styling
 src/main.js           renderer, cameras, input, audio, game loop
 src/physics.js        wind + yacht dynamics (the model)
 src/boat.js           procedural yacht, wind-shaped cloth sails, wake
-src/ocean.js          water/sky shaders, buoys
+src/ocean.js          water/sky shaders, buoys, life rings, wind streaks
 src/hud.js            wind rose, trim gauge, instruments, coach tips
-src/lessons.js        the six-lesson curriculum
+src/lessons.js        lesson/test runtime (LessonManager)
+src/curriculum.js     curriculum data — LEARN lessons + EXAM tests
+src/mob.js            man-overboard scenario
+src/traffic.js        AI traffic yacht (COLREGs Rule 12 right-of-way)
 docs/RESEARCH.md      nautical rules & physics research behind the model
 vendor/               three.js (vendored, offline-friendly)
 ```

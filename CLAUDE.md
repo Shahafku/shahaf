@@ -86,10 +86,6 @@ everywhere — put new shared math there rather than duplicating it. Keep
 curriculum **content** in `curriculum.js` separate from the lesson **runtime**
 in `lessons.js`.
 
-> Note: `README.md`'s "Project layout" section predates the split of curriculum
-> data into `curriculum.js` and the addition of `mob.js` / `traffic.js`. This
-> table reflects the current source tree.
-
 ## The physics model
 
 The simulation is a real (simplified) sailing model, documented in
