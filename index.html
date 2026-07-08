@@ -13,6 +13,10 @@
 <!-- Brand -->
 <div id="brand">⛵ <b>Sail Trainer 3D</b><span> · learn the wind</span></div>
 
+<!-- Mobile menu (declutters the rail on phones; hidden on desktop) -->
+<button id="menuBtn" aria-label="Open menu" title="Menu">☰</button>
+<div id="menuBackdrop"></div>
+
 <!-- Lesson panel (top-left) -->
 <div id="lessonPanel" class="panel">
   <div id="lessonTitle">Lesson</div>
@@ -47,6 +51,7 @@
 
 <!-- Trim bar + coach tip (bottom-center) -->
 <div id="trimWrap">
+  <button id="trimToggle" aria-label="Minimize mainsheet trim" title="Minimize mainsheet trim">−</button>
   <canvas id="trimBar" width="360" height="64"></canvas>
   <div id="tipText" class="tip"></div>
 </div>
