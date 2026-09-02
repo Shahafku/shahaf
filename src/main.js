@@ -96,8 +96,8 @@ for (const [id, code] of [
 }
 
 // ------------------------------------------------------------------ Camera
-let camMode = 0; // 0 chase, 1 helm, 2 tactical top-down
-const camModes = ['CHASE', 'HELM', 'TACTICAL'];
+let camMode = 0; // 0 chase, 1 helm, 2 tactical top-down, 3 stern
+const camModes = ['CHASE', 'HELM', 'TACTICAL', 'STERN'];
 function cycleCamera() {
   camMode = (camMode + 1) % camModes.length;
   document.getElementById('camBtn').textContent = '📷 ' + camModes[camMode];
@@ -140,11 +140,17 @@ function updateCamera(dt) {
     want = new THREE.Vector3(bx - f.x * 3.6, 3.6, bz - f.z * 3.6);
     look = new THREE.Vector3(bx + f.x * 30, 3.0, bz + f.z * 30);
     stiff = 6;
-  } else {
+  } else if (camMode === 2) {
     // Tactical: high top-down, north up — see your zigzag like a chart
     want = new THREE.Vector3(bx, 130, bz - 18);
     look = new THREE.Vector3(bx, 0, bz);
     stiff = 3;
+  } else {
+    // Stern view: just aft of and above the transom, looking forward over the
+    // cockpit so the stern area — helm, backstay and mainsheet — fills the frame.
+    want = new THREE.Vector3(bx - f.x * 8, 4.2, bz - f.z * 8);
+    look = new THREE.Vector3(bx + f.x * 3, 2.2, bz + f.z * 3);
+    stiff = 5;
   }
   camPos.lerp(want, Math.min(1, stiff * dt));
   camTarget.lerp(look, Math.min(1, 5 * dt));
