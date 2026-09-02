@@ -24,13 +24,20 @@ export class BoatView {
 
   // ---------------------------------------------------------------- Hull
   _buildHull() {
-    // Canoe body: lathe a slender teardrop, then squash it into a hull.
+    // Canoe body: lathe a profile that tapers to a fine bow but keeps a broad,
+    // rounded transom at the stern (real yachts are cut off flat aft, not pointed).
     const pts = [];
-    const N = 24;
+    const N = 26;
+    const MAX_BEAM = 1.55;
+    const STERN_W = 0.95; // transom half-width — full stern instead of a needle point
+    // Flat transom cap: a disc closing the open stern ring.
+    pts.push(new THREE.Vector2(0.001, -4.9));
     for (let i = 0; i <= N; i++) {
-      const t = i / N;
+      const t = i / N; // 0 = stern, 1 = bow
       const y = -4.9 + 9.9 * t; // stern → bow along the lathe axis
-      const r = 1.55 * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.72)), 0.85) + 0.001;
+      const bow = MAX_BEAM * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.72)), 0.85);
+      const transom = STERN_W * Math.pow(Math.max(0, 1 - t / 0.30), 2.2); // fades forward
+      const r = bow + transom + 0.001;
       pts.push(new THREE.Vector2(r, y));
     }
     const lathe = new THREE.LatheGeometry(pts, 36);
