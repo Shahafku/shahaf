@@ -17,6 +17,7 @@ export class BoatView {
 
     this._buildHull();
     this._buildRig();
+    this._buildRunningRigging();
     this._buildSails();
     this._buildWake(scene);
     this.time = 0;
@@ -234,7 +235,7 @@ export class BoatView {
       this.heelGroup.add(new THREE.Line(g, rigMat));
     };
     stay(this.mastTop, new THREE.Vector3(0, 1.0, BOW_Z - 0.1));   // forestay
-    stay(this.mastTop, new THREE.Vector3(0, 1.0, STERN_Z + 0.1)); // backstay
+    // backstay is drawn as a cord cylinder in _buildRunningRigging()
     stay(this.mastTop, new THREE.Vector3(1.05, 0.95, 1.1));       // shrouds
     stay(this.mastTop, new THREE.Vector3(-1.05, 0.95, 1.1));
 
@@ -280,6 +281,73 @@ export class BoatView {
       emissiveIntensity: 0.38,
     });
     return new THREE.Mesh(geo, mat);
+  }
+
+  // ------------------------------------------------------ Running rigging
+  _buildRunningRigging() {
+    const cordMat = new THREE.MeshStandardMaterial({ color: 0x20242a, roughness: 0.9 });
+    // Helper: a thin cylinder "cord" spanning a→b.
+    const cordCyl = (a, b, r) => {
+      const dir = new THREE.Vector3().subVectors(b, a);
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, dir.length(), 6), cordMat);
+      m.position.copy(a).addScaledVector(dir, 0.5);
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+      return m;
+    };
+
+    // Traveller track across the cockpit (static).
+    this.travellerY = 0.95;
+    this.travellerZ = -2.3;
+    const trav = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.035, 1.7, 8),
+      new THREE.MeshStandardMaterial({ color: 0x3a3f45, metalness: 0.6, roughness: 0.4 })
+    );
+    trav.rotation.z = Math.PI / 2;
+    trav.position.set(0, this.travellerY, this.travellerZ);
+    this.heelGroup.add(trav);
+
+    // Prominent backstay: masthead → transom (drawn as a cord cylinder here,
+    // replacing the thin line stay so it reads in the stern view).
+    this.heelGroup.add(cordCyl(this.mastTop, new THREE.Vector3(0, 1.0, STERN_Z + 0.1), 0.025));
+
+    // Mainsheet: a reeved tackle of thin cord cylinders, repositioned each frame
+    // in _updateRigging() so it tracks the boom. Cylinders (not a 1px line) so the
+    // rope reads as clearly as the backstay in the stern view.
+    this.msFalls = 3;
+    this.mainsheetFalls = [];
+    const msMat = new THREE.MeshStandardMaterial({ color: 0x23272e, roughness: 0.9 });
+    for (let n = 0; n < this.msFalls; n++) {
+      const fall = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1, 6), msMat);
+      fall.frustumCulled = false;
+      this.heelGroup.add(fall);
+      this.mainsheetFalls.push(fall);
+    }
+    // Scratch vectors reused each frame to avoid per-frame allocation.
+    this._msUp = new THREE.Vector3(0, 1, 0);
+    this._msA = new THREE.Vector3();
+    this._msB = new THREE.Vector3();
+    this._msDir = new THREE.Vector3();
+  }
+
+  _updateRigging(boat) {
+    // bx/bz mirror the boomGroup transform from _buildRig (gooseneck at z=1.15,
+    // boomY = BOOM_H+0.9); keep these in sync or the mainsheet detaches from the boom.
+    // Boom block: ~82% aft along the boom, rotated by the boom angle about the mast.
+    const bl = BOOM_LEN * 0.82, th = boat.boom, boomY = BOOM_H + 0.9;
+    const bx = -bl * Math.sin(th), bz = 1.15 - bl * Math.cos(th);
+    const carY = this.travellerY + 0.12, carZ = this.travellerZ;
+    const spread = 0.10;
+    for (let n = 0; n < this.msFalls; n++) {
+      const ox = (n - (this.msFalls - 1) / 2) * spread; // spread the falls sideways
+      const a = this._msA.set(bx + ox, boomY, bz);      // boom block
+      const b = this._msB.set(ox, carY, carZ);          // car block
+      const dir = this._msDir.subVectors(b, a);
+      const len = dir.length();
+      const fall = this.mainsheetFalls[n];
+      fall.position.copy(a).addScaledVector(dir, 0.5);  // midpoint (dir still un-normalized)
+      fall.quaternion.setFromUnitVectors(this._msUp, dir.divideScalar(len)); // then normalize
+      fall.scale.set(1, len, 1);
+    }
   }
 
   _buildSails() {
@@ -460,6 +528,7 @@ export class BoatView {
     // Boom: physics +boom = starboard; rotation.y = +θ swings the aft-pointing
     // tip (local -Z) to local -X = visual starboard.
     this.boomGroup.rotation.y = boat.boom;
+    this._updateRigging(boat);
 
     // Windex points into the apparent wind (boat frame): rotate local +Z to AWA
     this.windex.rotation.y = -boat.awa;
