@@ -24,57 +24,81 @@ export class BoatView {
 
   // ---------------------------------------------------------------- Hull
   _buildHull() {
-    // Canoe body: lathe a profile that tapers to a fine bow but keeps a broad,
-    // rounded transom at the stern (real yachts are cut off flat aft, not pointed).
-    const pts = [];
-    const N = 26;
-    const MAX_BEAM = 1.55;
-    const STERN_W = 0.95; // transom half-width — full stern instead of a needle point
-    // Flat transom cap: a disc closing the open stern ring.
-    pts.push(new THREE.Vector2(0.001, -4.9));
-    for (let i = 0; i <= N; i++) {
-      const t = i / N; // 0 = stern, 1 = bow
-      const y = -4.9 + 9.9 * t; // stern → bow along the lathe axis
-      const bow = MAX_BEAM * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.72)), 0.85);
-      const transom = STERN_W * Math.pow(Math.max(0, 1 - t / 0.30), 2.2); // fades forward
-      const r = bow + transom + 0.001;
-      pts.push(new THREE.Vector2(r, y));
+    // Station-lofted hull: a real sailboat shape — a fine stem forward and a
+    // BROAD stern cut off FLAT as a transom. (A LatheGeometry is revolved and
+    // therefore can never be flat aft; this lofts transverse stations instead.)
+    const NL = 28;            // stations along the length (stern → bow)
+    const NG = 24;            // girth points per section (port sheer → keel → stbd sheer)
+    const MAXB = 1.5;         // max half-beam amidships
+    const STERN_HALF = 0.95;  // transom half-width (full, flat stern)
+    const zAt = (t) => STERN_Z + (BOW_Z - STERN_Z) * t;
+    const halfBeam = (t) => {
+      const bow = MAXB * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.70)), 0.85);
+      const transom = STERN_HALF * Math.pow(Math.max(0, 1 - t / 0.34), 1.8);
+      return Math.max(0.02, bow + transom);
+    };
+    const ySheer = (t) => 0.86 + 0.16 * Math.pow(t, 1.6);        // deck edge, rises at bow — tall enough that the deck meets the hull top aft
+    const yBottom = (t) => 0.30 - 0.62 * Math.sin(Math.PI * Math.pow(t, 0.85)); // canoe bottom
+    // Section point: g in [-1,1] across the boat; u=|g| runs keel(0)→sheer(1).
+    const sectPt = (t, g) => {
+      const u = Math.abs(g), side = Math.sign(g) || 1;
+      const hb = halfBeam(t), yb = yBottom(t), ys = ySheer(t);
+      const x = side * hb * Math.pow(Math.sin(u * Math.PI / 2), 0.8);
+      const y = yb + (ys - yb) * u;
+      return [x, y, zAt(t)];
+    };
+    const colorAt = (y) =>
+      y < 0.12 ? [0.48, 0.12, 0.16] :      // antifouling (below waterline)
+      y < 0.24 ? [0.078, 0.212, 0.361] :   // boot stripe (at waterline)
+                 [0.957, 0.965, 0.973];    // white topsides
+
+    const positions = [], colors = [], index = [];
+    const push = (p) => {
+      positions.push(p[0], p[1], p[2]);
+      const c = colorAt(p[1]); colors.push(c[0], c[1], c[2]);
+    };
+    // Skin grid
+    for (let i = 0; i <= NL; i++) {
+      const t = i / NL;
+      for (let j = 0; j <= NG; j++) push(sectPt(t, -1 + 2 * (j / NG)));
     }
-    const lathe = new THREE.LatheGeometry(pts, 36);
-    const hullMat = new THREE.MeshStandardMaterial({ color: 0xf4f6f8, roughness: 0.35, metalness: 0.05 });
-    const hull = new THREE.Mesh(lathe, hullMat);
-    hull.rotation.x = Math.PI / 2; // axis along Z, bow to +Z
-    hull.scale.set(1.0, 1.0, 0.62); // z-scale here is vertical after rotation
-    const hullWrap = new THREE.Group();
-    hullWrap.add(hull);
-    hullWrap.scale.set(0.92, 1, 1);
-    hullWrap.position.y = 0.42;
-    this.heelGroup.add(hullWrap);
+    const rw = NG + 1;
+    for (let i = 0; i < NL; i++)
+      for (let j = 0; j < NG; j++) {
+        const a = i * rw + j, b = a + 1, d = a + rw, e = d + 1;
+        index.push(a, d, b, b, d, e);
+      }
+    // Flat transom cap: fan the stern-most ring (i=0, the first rw verts) around its centroid.
+    const cIdx = positions.length / 3;
+    push([0, (yBottom(0) + ySheer(0)) / 2, zAt(0)]);
+    for (let j = 0; j < NG; j++) index.push(cIdx, j + 1, j);
 
-    // Waterline stripe
-    const stripe = new THREE.Mesh(lathe.clone(), new THREE.MeshStandardMaterial({ color: 0x14365c, roughness: 0.4 }));
-    stripe.rotation.x = Math.PI / 2;
-    stripe.scale.set(1.012, 1.012, 0.62 * 1.012);
-    const sw = new THREE.Group();
-    sw.add(stripe);
-    sw.scale.set(0.92, 1, 1);
-    sw.position.y = 0.30;
-    // clip visually by lowering: cheap two-tone effect
-    this.heelGroup.add(sw);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geo.setIndex(index);
+    geo.computeVertexNormals();
+    // DoubleSide keeps the hull lit regardless of triangle winding (robust for a
+    // hand-lofted surface); the deck caps the open top so interior is never seen.
+    const hull = new THREE.Mesh(
+      geo,
+      new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.05, side: THREE.DoubleSide })
+    );
+    hull.scale.set(0.92, 1, 1);
+    this.heelGroup.add(hull);
 
-    // Deck: flattened ellipse
+    // Deck: flattened ellipse — bow-fine, stern squared to meet the transom.
     const deckShape = new THREE.Shape();
     deckShape.moveTo(0, BOW_Z);
-    deckShape.bezierCurveTo(1.35, BOW_Z - 2.2, 1.5, -1.5, 1.15, STERN_Z);
-    deckShape.lineTo(-1.15, STERN_Z);
-    deckShape.bezierCurveTo(-1.5, -1.5, -1.35, BOW_Z - 2.2, 0, BOW_Z);
-    const deckGeo = new THREE.ShapeGeometry(deckShape, 24);
+    deckShape.bezierCurveTo(1.32, BOW_Z - 2.2, 1.42, -1.5, 0.95, STERN_Z + 0.05);
+    deckShape.lineTo(-0.95, STERN_Z + 0.05);
+    deckShape.bezierCurveTo(-1.42, -1.5, -1.32, BOW_Z - 2.2, 0, BOW_Z);
     const deck = new THREE.Mesh(
-      deckGeo,
+      new THREE.ShapeGeometry(deckShape, 24),
       new THREE.MeshStandardMaterial({ color: 0xd9c49a, roughness: 0.8 })
     );
     deck.rotation.x = -Math.PI / 2;
-    deck.position.y = 0.88;
+    deck.position.y = 0.84; // just below the aft sheer so the hull top never floats above the deck
     this.heelGroup.add(deck);
 
     // Cabin
