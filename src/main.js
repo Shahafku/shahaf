@@ -8,6 +8,8 @@ import { LessonManager } from './lessons.js';
 import { LESSONS, TESTS, ALL, byId } from './curriculum.js';
 import { TrafficBoat } from './traffic.js';
 import { WindStreaks } from './ocean.js';
+import { storage } from './storage.js';
+import { SailingFlow } from './onboarding.js';
 
 // ------------------------------------------------------------------ Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -37,8 +39,33 @@ addEventListener('resize', () => {
 
 // ------------------------------------------------------------------ Input
 const keys = Object.create(null);
+let flow;
+const canSail = () => flow?.state === 'sailing';
+function clearInput() {
+  for (const key of Object.keys(keys)) delete keys[key];
+  dragging = false;
+  boat.rudder = 0;
+}
+addEventListener('blur', clearInput);
+document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
+// Inert handles focus and pointer access; this also guards synthetic input.
+for (const type of ['click', 'pointerdown', 'wheel', 'input']) {
+  document.getElementById('simulator').addEventListener(type, (event) => {
+    if (!canSail()) { event.preventDefault(); event.stopImmediatePropagation(); }
+  }, true);
+}
 addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT') return;
+  if (!canSail()) {
+    if (flow?.state === 'result' && e.code === 'Enter' && e.target.tagName !== 'BUTTON') {
+      e.preventDefault();
+      if (lessons.failed) flow.enterItem(lessons.lesson());
+      else flow.next();
+    }
+    return;
+  }
+  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable) return;
+  if (e.target.tagName === 'BUTTON' && ['Enter', 'Space'].includes(e.code)) return;
+  if (e.repeat && !e.code.startsWith('Arrow')) return;
   keys[e.code] = true;
   if (e.code === 'KeyT') toggleAutoTrim();
   if (e.code === 'KeyC') cycleCamera();
@@ -69,16 +96,18 @@ document.getElementById('autoTrimBtn').addEventListener('click', toggleAutoTrim)
 // left). The base input mapping (ArrowRight → rudder to starboard → bow right)
 // is wheel behaviour, so tiller mode flips the sign of the human helm input.
 // Physics + AI keep the original convention.
-let helmMode = localStorage.getItem('helm') === 'wheel' ? 'wheel' : 'tiller';
+let helmMode = storage.getItem('helm') === 'wheel' ? 'wheel' : 'tiller';
 function syncHelmBtn() {
+  hud.helmMode = helmMode;
   document.getElementById('helmBtn').textContent =
     helmMode === 'wheel' ? '🛞 WHEEL' : '⚓ TILLER';
   view.setHelm(helmMode);
 }
 function toggleHelm() {
   helmMode = helmMode === 'wheel' ? 'tiller' : 'wheel';
-  localStorage.setItem('helm', helmMode);
+  storage.setItem('helm', helmMode);
   syncHelmBtn();
+  lessons.renderTutorial(boat);
 }
 document.getElementById('helmBtn').addEventListener('click', toggleHelm);
 syncHelmBtn();
@@ -88,11 +117,13 @@ for (const [id, code] of [
   ['btnLeft', 'ArrowLeft'], ['btnRight', 'ArrowRight'], ['btnIn', 'ArrowUp'], ['btnOut', 'ArrowDown'],
 ]) {
   const el = document.getElementById(id);
-  const on = (e) => { e.preventDefault(); keys[code] = true; };
+  const on = (e) => { e.preventDefault(); if (canSail()) { el.setPointerCapture(e.pointerId); keys[code] = true; } };
   const off = (e) => { e.preventDefault(); keys[code] = false; };
   el.addEventListener('pointerdown', on);
   el.addEventListener('pointerup', off);
   el.addEventListener('pointerleave', off);
+  el.addEventListener('pointercancel', off);
+  el.addEventListener('lostpointercapture', off);
 }
 
 // ------------------------------------------------------------------ Camera
@@ -107,16 +138,18 @@ document.getElementById('camBtn').addEventListener('click', cycleCamera);
 let orbitYaw = 0, orbitPitch = 0.24, orbitDist = 26;
 let dragging = false, lastX = 0, lastY = 0;
 renderer.domElement.addEventListener('pointerdown', (e) => {
+  if (!canSail()) return;
   dragging = true; lastX = e.clientX; lastY = e.clientY;
 });
 addEventListener('pointerup', () => (dragging = false));
 addEventListener('pointermove', (e) => {
-  if (!dragging) return;
+  if (!canSail() || !dragging) return;
   orbitYaw -= (e.clientX - lastX) * 0.005;
   orbitPitch = clamp(orbitPitch + (e.clientY - lastY) * 0.004, 0.05, 1.2);
   lastX = e.clientX; lastY = e.clientY;
 });
 renderer.domElement.addEventListener('wheel', (e) => {
+  if (!canSail()) return;
   orbitDist = clamp(orbitDist + e.deltaY * 0.03, 12, 70);
 });
 
@@ -169,14 +202,28 @@ document.getElementById('posBtn').addEventListener('click', () =>
 // a slide-in drawer so the sailing screen stays uncluttered. On desktop the
 // button and backdrop are display:none and this is inert.
 const menuBackdrop = document.getElementById('menuBackdrop');
-function setMenu(open) { document.body.classList.toggle('menu-open', open); }
+const compactMenu = matchMedia('(max-width: 860px)');
+function setMenu(open) {
+  const rail = document.getElementById('rail');
+  const button = document.getElementById('menuBtn');
+  document.body.classList.toggle('menu-open', open);
+  button.setAttribute('aria-expanded', String(open));
+  rail.inert = compactMenu.matches && !open;
+  if (open && compactMenu.matches) document.getElementById('learnTrack').focus();
+  else if (rail.contains(document.activeElement)) button.focus();
+}
+compactMenu.addEventListener('change', () => setMenu(false));
+setMenu(false);
+addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && document.body.classList.contains('menu-open')) setMenu(false);
+});
 document.getElementById('menuBtn').addEventListener('click', () =>
   setMenu(!document.body.classList.contains('menu-open')));
 menuBackdrop.addEventListener('click', () => setMenu(false));
 
 // Mainsheet trim bar can be minimized on phones (the toggle is desktop-hidden).
 const trimToggle = document.getElementById('trimToggle');
-if (localStorage.getItem('trimMin') === '1') {
+if (storage.getItem('trimMin') === '1') {
   document.body.classList.add('trim-min');
   trimToggle.textContent = '+';
   trimToggle.title = 'Show mainsheet trim';
@@ -185,7 +232,7 @@ trimToggle.addEventListener('click', () => {
   const min = document.body.classList.toggle('trim-min');
   trimToggle.textContent = min ? '+' : '−';
   trimToggle.title = min ? 'Show mainsheet trim' : 'Minimize mainsheet trim';
-  localStorage.setItem('trimMin', min ? '1' : '0');
+  storage.setItem('trimMin', min ? '1' : '0');
 });
 
 function makeAudio() {
@@ -244,24 +291,24 @@ buildPicker(document.getElementById('testPicker'), TESTS, (i) => 'T' + (i + 1));
 function selectItem(item) {
   if (!lessons.isUnlocked(item)) {
     const need = item.type === 'test'
-      ? 'Finish the matching lesson first'
+      ? 'Pass the previous test first'
       : 'Finish the earlier lessons first';
     // setTip is muted in exam mode — the mark info line is always visible.
     hud.setTip(`🔒 ${need} to unlock <b>${item.title}</b>.`, 'locked' + item.id);
     document.getElementById('markInfo').textContent = `🔒 ${need} — ${item.title}`;
     return;
   }
-  lessons.start(item, boat, wind);
+  flow.enterItem(item);
   setMenu(false); // collapse the mobile drawer once we're under way
 }
 function nextItem() {
-  selectItem(lessons.nextTarget() || byId('free'));
+  flow.next();
 }
 document.getElementById('nextLessonBtn').addEventListener('click', nextItem);
-document.getElementById('retryBtn').addEventListener('click', () => lessons.start(lessons.lesson(), boat, wind));
-document.getElementById('retakeBtn').addEventListener('click', () => lessons.start(lessons.lesson(), boat, wind));
+document.getElementById('retryBtn').addEventListener('click', () => flow.enterItem(lessons.lesson()));
+document.getElementById('retakeBtn').addEventListener('click', () => flow.enterItem(lessons.lesson()));
 document.getElementById('reviewBtn').addEventListener('click', () => {
-  if (lessons.reviewTarget) lessons.start(lessons.reviewTarget, boat, wind);
+  if (lessons.reviewTarget) flow.enterItem(byId(lessons.reviewTarget), { review: true });
 });
 
 // Wind panel (free sail)
@@ -276,23 +323,32 @@ windSpdInput.addEventListener('input', () => {
   document.getElementById('windSpdVal').textContent = windSpdInput.value + ' kn';
 });
 
-// Welcome card: show on first visit only
-const intro = document.getElementById('introOverlay');
-if (localStorage.getItem('sail.seenIntro')) intro.classList.add('hide');
-document.getElementById('setSailBtn').addEventListener('click', () => {
-  intro.classList.add('hide');
-  localStorage.setItem('sail.seenIntro', '1');
+// Central application state: entry screens pause all sailing activity.
+flow = new SailingFlow(lessons, (item) => {
+  clearInput();
+  lessons.start(item, boat, wind);
+  syncTrimBtn();
+  view.update(0, boat, wind, env.time);
+  updateCamera(1);
+}, (state) => {
+  clearInput();
+  setMenu(false);
+  if (audio) audio.master.gain.setTargetAtTime(state === 'sailing' && audioOn ? 1 : 0, audio.ctx.currentTime, 0.2);
+}, () => ({ touch: matchMedia('(pointer: coarse)').matches, helm: helmMode }));
+document.getElementById('guidanceToggle').addEventListener('click', () => {
+  lessons.guidanceHidden = !lessons.guidanceHidden;
+  lessons.renderTutorial(boat);
 });
 
 // Debug/console handle (also used by automated tests)
 window.__sail = {
-  boat, wind, lessons, LESSONS, TESTS, ALL, byId, view, traffic,
+  boat, wind, lessons, LESSONS, TESTS, ALL, byId, view, traffic, flow,
   select: (id) => selectItem(byId(id)),
   mob: () => lessons.mobCtl,
 };
 
 // ------------------------------------------------------------------- Loop
-lessons.start(LESSONS[0], boat, wind);
+flow.boot();
 document.getElementById('camBtn').textContent = '📷 ' + camModes[0];
 
 let last = performance.now();
@@ -302,6 +358,11 @@ function frame(now) {
   requestAnimationFrame(frame);
   let dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+
+  if (!canSail() || document.hidden) {
+    renderer.render(scene, camera);
+    return;
+  }
 
   // Controls → boat
   const helmSign = helmMode === 'wheel' ? 1 : -1;
@@ -322,6 +383,7 @@ function frame(now) {
   traffic.setActive(!!lessons.lesson().free, wind);
   const advisory = traffic.update(dt, wind, boat, env.time);
   lessons.update(dt, boat, wind, env.time, advisory);
+  if (lessons.completed || lessons.failed) flow.showResult();
   streaks.update(dt, wind, boat.pos, env.time);
   updateCamera(dt);
   env.update(dt, camera, boat.pos);

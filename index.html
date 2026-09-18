@@ -7,21 +7,31 @@
 <link rel="stylesheet" href="styles.css" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛵</text></svg>" />
 </head>
-<body>
+<body data-flow="welcome">
+<div id="simulator" inert>
 <div id="app"></div>
 
 <!-- Brand -->
 <div id="brand">⛵ <b>Sail Trainer 3D</b><span> · learn the wind</span></div>
 
 <!-- Mobile menu (declutters the rail on phones; hidden on desktop) -->
-<button id="menuBtn" aria-label="Open menu" title="Menu">☰</button>
+<button id="menuBtn" aria-label="Open menu" aria-controls="rail" aria-expanded="false" title="Menu">☰</button>
 <div id="menuBackdrop"></div>
 
 <!-- Lesson panel (top-left) -->
 <div id="lessonPanel" class="panel">
-  <div id="lessonTitle">Lesson</div>
+  <div id="lessonTitle" tabindex="-1">Lesson</div>
   <div id="lessonBrief" class="brief"></div>
   <div id="lessonStep" class="step"></div>
+  <section id="tutorialCoach" hidden aria-label="Lesson guidance">
+    <div class="coach-heading"><span id="coachCount"></span><button id="guidanceToggle" aria-expanded="true" aria-controls="coachBody">Hide guidance</button></div>
+    <div id="coachBody">
+      <h2 id="coachTitle" aria-live="polite"></h2>
+      <p id="coachAction"></p><p id="coachHelm"></p>
+      <progress id="coachProgress" max="1" value="0" aria-label="Current objective progress"></progress>
+      <div id="coachProgressText"></div><p id="coachRecovery" role="status"></p>
+    </div>
+  </section>
   <div id="markInfo" class="markinfo"></div>
 </div>
 
@@ -58,10 +68,11 @@
 
 <!-- Right rail -->
 <div id="rail">
-  <div class="pickhead">LEARN</div>
+  <button id="learnTrack" class="track-switch" aria-pressed="false">Learn</button>
   <div id="lessonPicker" class="picker"></div>
-  <div class="pickhead exam">EXAM · מבחן</div>
+  <button id="examTrack" class="track-switch" aria-pressed="false">Exam · מבחן</button>
   <div id="testPicker" class="picker"></div>
+  <button id="replayIntroBtn" class="railbtn wide">Replay introduction</button>
   <button id="autoTrimBtn" class="railbtn" title="Auto-trim (T)">AUTO<br/>TRIM</button>
   <button id="helmBtn" class="railbtn wide" title="Helm: wheel or tiller (E)">🛞 WHEEL</button>
   <button id="camBtn" class="railbtn wide" title="Camera (C)">📷 CHASE</button>
@@ -82,11 +93,11 @@
 <!-- Touch controls -->
 <div id="touch">
   <div class="tgroup">
-    <button id="btnLeft">⟲</button><button id="btnRight">⟳</button>
+    <button id="btnLeft" aria-label="Move helm left">⟲</button><button id="btnRight" aria-label="Move helm right">⟳</button>
     <div class="tlabel">RUDDER</div>
   </div>
   <div class="tgroup">
-    <button id="btnIn">−</button><button id="btnOut">+</button>
+    <button id="btnIn" aria-label="Sail in">−</button><button id="btnOut" aria-label="Ease sail out">+</button>
     <div class="tlabel">SHEET</div>
   </div>
 </div>
@@ -116,30 +127,14 @@
     <span style="color:#ffb14f">orange = apparent wind</span>, red wedge = no-go zone.</div>
 </div>
 
-<!-- Welcome overlay (first launch) -->
-<div id="introOverlay">
-  <div class="card">
-    <h2>⛵ Welcome aboard</h2>
-    <p>This is a sailing school built like the <b>Israeli practical exam</b> (המבחן המעשי).
-      Two tracks on the right rail: <b>LEARN</b> — lessons that explain and coach you through
-      each skill — and <b>EXAM · מבחן</b> — the same six exercises as the real test:
-      goal only, no coaching aids, pass or fail.</p>
-    <p>Finish a lesson to unlock its test. Start with Lesson 1.</p>
-    <table class="introkeys">
-      <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>steer (rudder)</td></tr>
-      <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>sheet the sails in / out</td></tr>
-      <tr><td><kbd>C</kbd></td><td>camera &nbsp;·&nbsp; <kbd>H</kbd> help</td></tr>
-    </table>
-    <p class="introhint">Watch the <b>wind rose</b> (top right): <span style="color:#4fa8ff">blue = true wind</span>,
-      <span style="color:#ffb14f">orange = the wind you feel</span>, red wedge = where sailboats cannot go.</p>
-    <div class="btnrow">
-      <button id="setSailBtn" class="primary">Set sail →</button>
-    </div>
-  </div>
+</div><!-- simulator -->
+
+<div id="introOverlay" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+  <div id="introContent" class="card"></div>
 </div>
 
 <!-- Lesson complete overlay -->
-<div id="completeOverlay">
+<div id="completeOverlay" role="dialog" aria-modal="true" aria-label="Exercise complete">
   <div class="card">
     <div id="completeText"></div>
     <div class="btnrow">
@@ -150,7 +145,7 @@
 </div>
 
 <!-- Test failed overlay -->
-<div id="failOverlay">
+<div id="failOverlay" role="dialog" aria-modal="true" aria-label="Exercise not passed">
   <div class="card">
     <div id="failText"></div>
     <div class="btnrow">

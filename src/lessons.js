@@ -4,6 +4,7 @@ import { DEG, wrapPi } from './physics.js';
 import { makeBuoy, bobBuoy, bobLifeRing } from './ocean.js';
 import { LESSONS, TESTS, byId } from './curriculum.js';
 import { MobController } from './mob.js';
+import { storage } from './storage.js';
 
 const PROGRESS_KEY = 'sail.progress.v2';
 
@@ -26,13 +27,13 @@ export class LessonManager {
     // Progress = set of completed item ids. Migrates the old linear
     // 'sail.unlocked' index (lessons 0..N-1 done) into ids once.
     let stored = null;
-    try { stored = JSON.parse(localStorage.getItem(PROGRESS_KEY) || 'null'); } catch { /* reset */ }
-    if (!stored) {
-      const old = Number(localStorage.getItem('sail.unlocked') || 0);
-      stored = { done: ['course', 'upwind', 'tack', 'gybe'].slice(0, Math.min(old, 4)) };
-      localStorage.setItem(PROGRESS_KEY, JSON.stringify(stored));
+    try { stored = JSON.parse(storage.getItem(PROGRESS_KEY) || 'null'); } catch { /* reset */ }
+    if (!stored || !Array.isArray(stored.done)) {
+      const old = Number(storage.getItem('sail.unlocked') || 0);
+      stored = { done: ['course', 'upwind', 'tack', 'gybe'].slice(0, Math.max(0, Math.min(Number.isFinite(old) ? old : 0, 4))) };
+      storage.setItem(PROGRESS_KEY, JSON.stringify(stored));
     }
-    this.progress = new Set(stored.done || []);
+    this.progress = new Set(stored.done.filter((id) => typeof id === 'string'));
 
     this.panelTitle = document.getElementById('lessonTitle');
     this.panelBrief = document.getElementById('lessonBrief');
@@ -49,14 +50,24 @@ export class LessonManager {
 
   lesson() { return this.current; }
 
+  trackItems(track) { return track === 'exam' ? TESTS : LESSONS.filter((item) => !item.free); }
+
   isUnlocked(item) {
-    if (item.free) return true;
-    if (item.type === 'test') return (item.requires || []).every((id) => this.progress.has(id));
-    const i = LESSONS.indexOf(item);
-    return i <= 0 || this.progress.has(LESSONS[i - 1].id);
+    if (!item) return false;
+    if (item.free || this.progress.has(item.id)) return true;
+    const items = this.trackItems(item.type === 'test' ? 'exam' : 'learn');
+    const i = items.indexOf(item);
+    return i === 0 || (i > 0 && this.progress.has(items[i - 1].id));
   }
 
-  nextTarget() { return this.current.next ? byId(this.current.next) : null; }
+  resumeTarget(track) {
+    return this.trackItems(track).find((item) => !this.progress.has(item.id) && this.isUnlocked(item)) || null;
+  }
+
+  nextTarget() {
+    const items = this.trackItems(this.current.type === 'test' ? 'exam' : 'learn');
+    return items[items.indexOf(this.current) + 1] || null;
+  }
 
   start(itemOrId, boat, wind) {
     const L = typeof itemOrId === 'string' ? byId(itemOrId) : itemOrId;
@@ -66,11 +77,13 @@ export class LessonManager {
     this.markIdx = 0;
     this.ctx = {
       t: 0, timeInNoGo: 0, tacked: false, gybed: false, tackCount: 0, gybeCount: 0,
-      prevTwaSign: 0, ironsTime: 0, onCourseTime: 0, stoppedFor: 0,
+      sheetedIn: false, prevTwaSign: 0, ironsTime: 0, onCourseTime: 0, stoppedFor: 0,
       distToMark: Infinity, marksDone: false, mob: { thrown: false },
     };
     this.completed = false;
     this.failed = false;
+    this.reviewTarget = null;
+    this.guidanceHidden = false;
     this.raceTime = 0;
     this.overlay.classList.remove('show');
     this.failOverlay.classList.remove('show');
@@ -86,6 +99,7 @@ export class LessonManager {
     boat.pos.x = L.boat.x; boat.pos.z = L.boat.z;
     boat.heading = L.boat.heading;
     boat.speed = 1.2; boat.latVel = 0; boat.heel = 0; boat.yawRate = 0;
+    if (L.tutorial) boat.autoTrim = false;
     boat.sheet = L.boat.sheet; boat.boom = 0; boat.rudder = 0;
 
     // Buoys
@@ -110,6 +124,15 @@ export class LessonManager {
     this.raceClock.style.display = L.timed ? 'block' : 'none';
     document.getElementById('windPanel').classList.toggle('show', !!L.free);
     this._syncPickers();
+    this.renderTutorial(boat);
+  }
+
+  renderTutorial(boat) {
+    const L = this.current;
+    this.hud.setTutorial(L.tutorial && !this.completed ? {
+      tutorial: L.tutorial, step: L.steps[this.stepIdx], index: this.stepIdx,
+      count: L.steps.length, hidden: this.guidanceHidden, ctx: this.ctx, boat,
+    } : null);
   }
 
   _showStep() {
@@ -126,6 +149,8 @@ export class LessonManager {
         if (!item) return;
         btn.classList.toggle('active', item === this.current);
         btn.classList.toggle('locked', !this.isUnlocked(item));
+        btn.setAttribute('aria-disabled', String(!this.isUnlocked(item)));
+        btn.setAttribute('aria-current', item === this.current ? 'step' : 'false');
         btn.classList.toggle('done', this.progress.has(item.id) && !item.free);
       });
     sync('#lessonPicker button', LESSONS);
@@ -150,6 +175,8 @@ export class LessonManager {
     // ---- Context tracking for predicates --------------------------------
     const ctx = this.ctx;
     ctx.t += dt;
+    // Initial boom motion can briefly produce good trim without any sail input.
+    if (L.tutorial && boat.sheet < L.boat.sheet - DEG) ctx.sheetedIn = true;
     const twaSign = Math.sign(boat.twa) || ctx.prevTwaSign;
     if (Math.abs(boat.twa) < 32 * DEG) ctx.timeInNoGo += dt;
     if (ctx.prevTwaSign && twaSign !== ctx.prevTwaSign) {
@@ -176,7 +203,7 @@ export class LessonManager {
       this.markInfo.textContent =
         `Mark ${this.markIdx + 1}/${L.marks.length} · ${Math.round(dist)} m · brg ${String(Math.round(brg)).padStart(3, '0')}° ${side}`;
       ctx.onCourseTime = Math.abs(rel) < 15 * DEG && boat.speed > 1.0 ? ctx.onCourseTime + dt : 0;
-      if (dist < 13) {
+      if (dist < 13 && (!L.tutorial || this.stepIdx === L.steps.length - 1)) {
         this.markIdx++;
         if (this.markIdx >= L.marks.length) {
           ctx.marksDone = true;
@@ -212,6 +239,7 @@ export class LessonManager {
         // a maneuver must happen AFTER its step is shown to count
         ctx.tacked = false;
         ctx.gybed = false;
+        if (L.tutorial) ctx.onCourseTime = 0;
         this._showStep();
       }
     }
@@ -221,7 +249,8 @@ export class LessonManager {
     }
 
     // Live coaching is for the classroom, not the exam.
-    if (L.type !== 'test') this._tips(boat, advisory);
+    if (L.tutorial) this.renderTutorial(boat);
+    else if (L.type !== 'test') this._tips(boat, advisory);
   }
 
   _tips(boat, advisory = null) {
@@ -257,13 +286,14 @@ export class LessonManager {
     const L = this.current;
     if (!L.free && !this.progress.has(L.id)) {
       this.progress.add(L.id);
-      localStorage.setItem(PROGRESS_KEY, JSON.stringify({ done: [...this.progress] }));
+      storage.setItem(PROGRESS_KEY, JSON.stringify({ done: [...this.progress] }));
     }
     const time = L.timed ? `<div class="raceResult">Course time: <b>${fmtTime(this.raceTime)}</b></div>` : '';
     const head = L.type === 'test' ? `✔ PASSED · ${L.title}` : `✔ ${L.title} — complete`;
     this.overlayText.innerHTML = `<h2>${head}</h2>${time}<p>${L.takeaway}</p>`;
     const next = this.nextTarget();
-    this.nextBtn.textContent = next ? `Next: ${shortTitle(next)} ⏎` : 'Free sail ⏎';
+    this.nextBtn.textContent = next ? `Next: ${shortTitle(next)} ⏎` : 'View track progress ⏎';
+    this.hud.setTutorial(null);
     this.overlay.classList.add('show');
     this._syncPickers();
   }

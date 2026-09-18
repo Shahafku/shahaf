@@ -38,6 +38,45 @@ export class HUD {
     }
   }
 
+  setTutorial(state) {
+    this.tutorialState = state;
+    document.body.classList.toggle('tutorial-active', !!state);
+    $('tutorialCoach').hidden = !state;
+    document.querySelectorAll('.tutorial-highlight').forEach((el) => el.classList.remove('tutorial-highlight'));
+    if (!state) return;
+    this.tipEl.innerHTML = '';
+    this._tipKey = '';
+    const { tutorial, step, index, count, hidden, ctx, boat } = state;
+    const touch = matchMedia('(pointer: coarse)').matches;
+    const helm = this.helmMode || 'tiller';
+    $('coachCount').textContent = `STEP ${index + 1} OF ${count}`;
+    $('guidanceToggle').textContent = hidden ? 'Show guidance' : 'Hide guidance';
+    $('guidanceToggle').setAttribute('aria-expanded', String(!hidden));
+    $('coachBody').hidden = hidden;
+    if (hidden) return;
+    for (const id of step.highlights || []) $(id)?.classList.add('tutorial-highlight');
+    // Do not repeatedly replace the live heading while the same step is active.
+    if ($('coachTitle').textContent !== step.title) $('coachTitle').textContent = step.title;
+    $('coachAction').textContent = step[touch ? 'touch' : 'keyboard'];
+    $('coachHelm').textContent = step.controls === 'helm' ? tutorial[helm] : '';
+    const progress = $('coachProgress');
+    progress.hidden = step.progress === 'distance';
+    if (step.progress === 'course') {
+      progress.value = Math.min(1, ctx.onCourseTime / 15);
+      $('coachProgressText').textContent = `${Math.min(15, ctx.onCourseTime).toFixed(1)} / 15 seconds on course`;
+    } else if (step.progress === 'trim') {
+      progress.value = Math.max(0, Math.min(1, boat.efficiency / 0.7, boat.speed / 1.2));
+      $('coachProgressText').textContent = 'Fill the sail and build speed';
+    } else {
+      $('coachProgressText').textContent = Number.isFinite(ctx.distToMark) ? `${Math.round(ctx.distToMark)} m to the ring` : 'Destination: the glowing ring';
+    }
+    const recovery = boat.inIrons ? tutorial.recovery.irons
+      : boat.stalled ? tutorial.recovery.stall
+      : boat.luffing && index > 0 ? tutorial.recovery.luff : '';
+    $('coachAction').hidden = !!recovery;
+    if ($('coachRecovery').textContent !== recovery) $('coachRecovery').textContent = recovery;
+  }
+
   update(dt, boat, wind) {
     this._drawRose(boat, wind);
     if (this.mode !== 'exam') this._drawTrim(boat);
