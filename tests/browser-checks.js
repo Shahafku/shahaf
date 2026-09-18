@@ -34,20 +34,21 @@ async function fixture(values = {}, blocked = false, touch = false) {
   return { w, d, app, click, key };
 }
 const cases = [
-  ['welcome and controls introduction freeze input, timers and world', async () => {
+  ['welcome and lesson introduction freeze input before direct simulator entry', async () => {
     const { app: a, d, click, key } = await fixture();
     assert(a.flow.state === 'welcome' && d.getElementById('simulator').inert, 'welcome isolates simulator');
     const initial = JSON.stringify({ pos: a.boat.pos, heading: a.boat.heading, sheet: a.boat.sheet, ctx: a.lessons.ctx });
     key('ArrowUp'); key('ArrowRight'); key('KeyT'); key('Digit2');
     await pause(300);
     assert(initial === JSON.stringify({ pos: a.boat.pos, heading: a.boat.heading, sheet: a.boat.sheet, ctx: a.lessons.ctx }), 'welcome is frozen');
-    click('chooseExam'); click('introBack'); click('chooseLearn'); click('setSailBtn');
-    assert(a.flow.state === 'controls-introduction' && a.boat.autoTrim === false, 'Lesson 1 begins paused without auto trim');
-    const pos = JSON.stringify(a.boat.pos);
+    click('chooseExam'); click('introBack'); click('chooseLearn');
+    const pos = JSON.stringify(a.boat.pos), context = JSON.stringify(a.lessons.ctx);
     key('ArrowUp'); key('ArrowRight'); await pause(300);
-    assert(a.lessons.ctx.t === 0 && JSON.stringify(a.boat.pos) === pos, 'controls intro freezes sailing');
-    click('beginLesson'); await pause();
-    assert(a.flow.state === 'sailing' && a.lessons.ctx.t > 0 && a.boat.sheet === 80 * Math.PI / 180, 'held intro input does not leak');
+    assert(a.flow.state === 'track-introduction' && JSON.stringify(a.lessons.ctx) === context && JSON.stringify(a.boat.pos) === pos, 'lesson introduction freezes sailing');
+    click('setSailBtn'); await pause();
+    assert(a.flow.state === 'sailing' && a.lessons.ctx.t > 0 && a.boat.sheet === 80 * Math.PI / 180, 'starts directly without leaking held intro input');
+    assert(a.boat.autoTrim === false && !d.getElementById('tutorialCoach').hidden, 'starts with manual trim and visible contextual coaching');
+    assert(d.getElementById('coachAction').textContent.includes('Hold ↑'), 'first control is explained inside simulator');
     click('guidanceToggle'); assert(a.lessons.guidanceHidden, 'guidance hides');
     click('guidanceToggle'); assert(!a.lessons.guidanceHidden, 'guidance reopens');
     const sheet = a.boat.sheet;
@@ -106,7 +107,6 @@ const cases = [
   }],
   ['helm conventions, touch input, cancellation and introduction replay', async () => {
     const { app: a, d, w, click, key } = await fixture({ 'sail.onboarding.v1': pref('learn') });
-    click('beginLesson');
     key('ArrowRight'); await pause(200); key('ArrowRight', 'keyup');
     assert(a.boat.rudder < 0, 'tiller right moves bow left');
     click('helmBtn');
@@ -125,15 +125,15 @@ const cases = [
     click('replayIntroBtn'); assert(a.flow.state === 'welcome', 'menu can replay welcome');
     click('chooseLearn'); click('setSailBtn');
     assert(a.boat.autoTrim === false && a.lessons.stepIdx === 0, 'replay restarts tutorial');
-    assert(d.getElementById('introContent').textContent.includes('Wheel: turn right'), 'intro reflects saved helm');
+    a.lessons.stepIdx = 1; a.lessons.renderTutorial(a.boat);
+    assert(d.getElementById('coachHelm').textContent.includes('Wheel: turn right'), 'simulator guidance reflects saved helm');
   }],
   ['completed Learn and persisted helm/trim preferences remain usable', async () => {
     const lessons = ['course', 'upwind', 'tack', 'gybe', 'mob-easy', 'mob-med', 'mob-hard'];
     const { app: a, d, click } = await fixture({ 'sail.onboarding.v1': pref('learn'), 'sail.progress.v2': progress(lessons), helm: 'wheel', trimMin: '1' });
     assert(a.flow.state === 'track-complete' && d.querySelectorAll('#replayChoices button').length === 7, 'all seven lessons complete');
     d.querySelector('#replayChoices button').click();
-    assert(a.flow.state === 'controls-introduction', 'Lesson 1 replay still introduces controls');
-    click('beginLesson');
+    assert(a.flow.state === 'sailing', 'Lesson 1 replay enters simulator directly');
     assert(a.lessons.stepIdx === 0 && !a.boat.autoTrim, 'Lesson 1 replay starts fresh');
   }],
   ['touch guidance and modal keyboard focus adapt to the input device', async () => {
@@ -146,8 +146,6 @@ const cases = [
     back.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Tab', code: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
     assert(d.activeElement === sail, 'Shift-Tab wraps to last modal button');
     click('setSailBtn');
-    assert(d.getElementById('introContent').textContent.includes('Use the left/right helm buttons'), 'controls intro uses touch instructions');
-    click('beginLesson');
     assert(d.getElementById('coachAction').textContent.includes('Hold sail-in'), 'coach uses touch instructions');
     a.lessons._fail('Fixture result'); a.flow.showResult();
     const time = a.lessons.ctx.t, pos = JSON.stringify(a.boat.pos); await pause(250);
@@ -155,7 +153,6 @@ const cases = [
   }],
   ['Lesson 1 can be completed through actual trim and sailing physics', async () => {
     const { app: a, click, key } = await fixture({ 'sail.onboarding.v1': pref('learn') });
-    click('beginLesson');
     // Step the real physics and runtime deterministically, including human sheet input.
     for (let i = 0; i < 600 && a.lessons.stepIdx === 0; i++) {
       a.boat.sheet = Math.max(2 * Math.PI / 180, a.boat.sheet - 0.55 / 60);
@@ -163,8 +160,8 @@ const cases = [
       a.lessons.update(1 / 60, a.boat, a.wind, 0);
     }
     assert(a.lessons.stepIdx === 1 && a.lessons.ctx.onCourseTime === 0, 'real sheet-in advances and resets hold timer');
-    // Pause through a fresh controls screen so automatic frames cannot interfere with exact boundaries.
-    a.flow.controlsIntro(a.lessons.current.tutorial);
+    // Pause through welcome so automatic frames cannot interfere with exact boundaries.
+    a.flow.welcome();
     a.boat.pos.x = -260; a.boat.pos.z = 10;
     a.lessons.update(0.05, a.boat, a.wind, 0);
     assert(!a.lessons.completed && a.lessons.markIdx === 0, 'early ring arrival does not consume mark');
@@ -176,7 +173,7 @@ const cases = [
     a.boat.heading = 90 * Math.PI / 180;
     a.lessons.update(15, a.boat, a.wind, 0);
     assert(a.lessons.stepIdx === 2, '15 continuous seconds unlocks ring stage');
-    click('beginLesson');
+    a.flow.sail();
     a.boat.pos.x = -260; a.boat.pos.z = 10; await pause();
     assert(a.lessons.completed, 'ring now finishes Lesson 1');
     click('nextLessonBtn'); assert(a.lessons.current.id === 'upwind', 'Learn proceeds to Lesson 2');

@@ -53,7 +53,7 @@ export class SailingFlow {
   screen(state, html) {
     this.lessons.overlay.classList.remove('show');
     this.lessons.failOverlay.classList.remove('show');
-    this.content.innerHTML = html;
+    this.content.innerHTML = `<div class="intro-brand"><svg aria-hidden="true" viewBox="0 0 32 38"><path d="M17 2 4 29h13V2Zm3 7v20h10L20 9ZM3 32h27l-3 4H6Z" fill="currentColor"/></svg><span>Sail Trainer 3D</span></div><div class="intro-page">${html}</div>`;
     this.setState(state);
     this.content.querySelector('h1, h2').focus();
   }
@@ -66,14 +66,18 @@ export class SailingFlow {
 
   welcome() {
     this.screen('welcome', `
-      <div class="intro-eyebrow">SAIL TRAINER 3D</div>
-      <h1 id="introTitle" tabindex="-1">Welcome aboard</h1>
-      <p class="intro-lead">Learn to handle the sails, or put your sailing skills to the test.</p>
-      <h2 class="choice-question">How much sailing experience do you have?</h2>
-      <div class="track-choices">
-        <button id="chooseLearn" class="track-choice"><span class="choice-label">I’m new to sailing</span><span>Teach me how to steer, adjust the sails, and work with the wind.</span><span class="choice-route">LEARN →</span></button>
-        <button id="chooseExam" class="track-choice"><span class="choice-label">I know the basics</span><span>I’ve learned the theory and know how to handle the sails. I’m ready to test my skills.</span><span class="choice-route">EXAM →</span></button>
-      </div>`);
+      <div class="welcome-main">
+        <h1 id="introTitle" tabindex="-1">Learn to sail</h1>
+        <p class="intro-lead">Build confidence on the water,<br class="wide-break"> one lesson at a time.</p>
+        <p class="intro-meta">7 guided lessons · No experience needed</p>
+        <button id="chooseLearn" class="primary intro-cta">Start sailing <span aria-hidden="true">→</span></button>
+      </div>
+      <section class="intro-secondary" aria-labelledby="examChoiceTitle">
+        <h2 id="examChoiceTitle">Already know how to sail?</h2>
+        <p>Put your skills to the test with 6 practical challenges.</p>
+        <button id="chooseExam" class="intro-link">Test my skills <span aria-hidden="true">→</span></button>
+      </section>
+      <p class="intro-footnote">You can switch tracks at any time.</p>`);
     $('chooseLearn').addEventListener('click', () => this.introduce('learn'));
     $('chooseExam').addEventListener('click', () => this.introduce('exam'));
   }
@@ -81,12 +85,20 @@ export class SailingFlow {
   introduce(track) {
     this.pendingTrack = track;
     const learn = track === 'learn';
+    const next = this.lessons.resumeTarget(track);
+    const firstLesson = learn && next?.tutorial;
     this.screen('track-introduction', `
-      <div class="intro-eyebrow">${learn ? 'LEARN · ONE STEP AT A TIME' : 'EXAM · SIX TESTS'}</div>
-      <h1 id="introTitle" tabindex="-1">${learn ? 'Let’s start with the basics.' : 'Put your skills to the test.'}</h1>
-      ${learn ? `<p>Lesson 1 provides guidance one action at a time. First fill the sail, then hold your course, and sail through the ring.</p><p>Steer to point the bow toward your destination. Adjust the sail by sheeting in to bring it closer, or easing out to let it open. We’ll show you the controls before you start.</p>`
-        : `<p>Take six sequential tests. Each gives you a goal and a pass/fail result, without coaching. Pass a test to unlock the next; retake passed tests whenever you like.</p><p>You can switch to Learn anytime.</p>`}
-      <div class="btnrow"><button id="introBack">← Back</button><button id="setSailBtn" class="primary">Set sail →</button></div>`);
+      <button id="introBack" class="intro-back">← Back</button>
+      <p class="intro-meta">${firstLesson ? 'Learn to sail · Lesson 1 of 7' : learn ? 'Learn to sail' : 'Test your skills · 6 practical tests'}</p>
+      <h1 id="introTitle" tabindex="-1">${firstLesson ? 'Feel the wind' : learn ? 'Keep learning' : 'Put your skills to the test'}</h1>
+      <p class="intro-lead">${firstLesson ? 'Start with a simple course. We’ll guide you through each step.' : learn ? 'Continue your guided lessons and build confidence at the helm.' : 'Sail independently, with clear goals and no coaching.'}</p>
+      ${firstLesson ? `<ol class="intro-objectives">
+        <li><strong>Fill the sail</strong><p>Adjust the sail until it catches the wind.</p></li>
+        <li><strong>Hold your course</strong><p>Stay on course for 15 seconds.</p></li>
+        <li><strong>Reach the ring</strong><p>Steer through the ring to finish.</p></li>
+      </ol>` : learn ? '<p>Your saved progress is ready when you are.</p>' : `<ul class="intro-exam-details"><li>Pass each test to unlock the next.</li><li>Get a clear pass or fail result.</li><li>Retry anytime, or switch to guided lessons.</li></ul>`}
+      <button id="setSailBtn" class="primary intro-cta">${learn ? 'Start sailing' : 'Start testing'} <span aria-hidden="true">→</span></button>
+      <p class="intro-footnote">${learn ? 'We’ll explain the controls in the simulator.' : 'Your test starts when you’re ready.'}</p>`);
     $('introBack').addEventListener('click', () => this.welcome());
     $('setSailBtn').addEventListener('click', () => {
       this.track = this.pendingTrack;
@@ -109,19 +121,7 @@ export class SailingFlow {
     if (!item.free) this.track = item.type === 'test' ? 'exam' : 'learn';
     this.saveTrack();
     this.start(item);
-    if (item.tutorial) this.controlsIntro(item.tutorial);
-    else this.sail();
-  }
-
-  controlsIntro(tutorial) {
-    const { touch, helm } = this.controls();
-    this.screen('controls-introduction', `
-      <div class="intro-eyebrow">LESSON 1 · CONTROLS</div>
-      <h2 id="introTitle" tabindex="-1">${tutorial.introTitle}</h2>
-      <p>${tutorial.intro}</p><p>${tutorial[touch ? 'touch' : 'keyboard']}</p>
-      <p>${tutorial[helm]}</p><p>${tutorial.sheet}</p>
-      <div class="btnrow"><button id="beginLesson" class="primary">Start sailing →</button></div>`);
-    $('beginLesson').addEventListener('click', () => this.sail());
+    this.sail();
   }
 
   sail() {
