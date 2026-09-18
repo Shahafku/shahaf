@@ -9,7 +9,8 @@ import { mobPassCondition } from './mob.js';
 // Shared item schema — see LessonManager for how each field is used:
 // { id, type: 'lesson'|'test', title, brief, wind, boat, marks, steps,
 //   pass?(boat,ctx), fail?(boat,ctx)->reason|null, timed?, timeLimit?,
-//   timeLimitMsg?, mob?, stepHint?, takeaway, requires?, review?, next?, free? }
+//   timeLimitMsg?, mob?, stepHint?, takeaway, requires?, review?, free?, tutorial? }
+// Track order controls unlocking/navigation. Legacy requires identifies review lessons only.
 
 const ironsFail = (sec) => (b, ctx) =>
   ctx.ironsTime > sec ? `You sat head-to-wind (in irons) for over ${sec} seconds. Keep the boat sailing.` : null;
@@ -27,6 +28,20 @@ export const LESSONS = [
     id: 'course',
     type: 'lesson',
     title: 'Lesson 1 · Hold a Course',
+    tutorial: {
+      introTitle: 'Your first few minutes at the helm',
+      intro: 'We’ll guide you through one action at a time: fill the sail, hold your course, then reach the ring.',
+      sheet: 'Sheet in to bring the sail closer; ease out to let it open.',
+      wheel: 'Wheel: turn right to bring the bow right; turn left to bring it left.',
+      tiller: 'Tiller: move left to bring the bow right; move right to bring it left.',
+      keyboard: 'Use ← / → to steer and ↑ / ↓ to sheet in or ease out.',
+      touch: 'Use the left/right helm buttons to steer. Hold sail-in (−) or ease-out (+) to adjust the sail.',
+      recovery: {
+        irons: 'Head-to-wind: steer away from the wind until the sail can fill again.',
+        stall: 'The sail is too tight. Ease out a little, then trim again.',
+        luff: 'The sail is flapping. Sheet in a little until it fills.',
+      },
+    },
     brief:
       'Wind pushes <b>across</b> the boat on a <b>beam reach</b> — the easiest, fastest point of sail. ' +
       'Sails work like wings: trim them to the <b>orange APP arrow</b> (apparent wind), not the blue one. ' +
@@ -36,19 +51,31 @@ export const LESSONS = [
     marks: [{ x: -260, z: 10 }],
     steps: [
       {
+        title: 'Fill the sail', controls: 'sheet', highlights: ['btnIn', 'trimBar'],
+        keyboard: 'Hold ↑ to sheet in until the sail fills and you build speed.',
+        touch: 'Hold sail-in (−) until the sail fills and you build speed.',
+        progress: 'trim',
         text: 'Your sail is flapping (<b>luffing</b>) — it makes no power. Press <kbd>↑</kbd> to sheet in until it fills and the trim bar turns green.',
-        done: (b) => b.efficiency > 0.7 && b.speed > 1.2,
+        done: (b, ctx) => ctx.sheetedIn && b.efficiency > 0.7 && b.speed > 1.2,
       },
       {
+        title: 'Hold your course', controls: 'helm', highlights: ['btnLeft', 'btnRight'],
+        keyboard: 'Use ← / → to keep the bow toward the glowing ring for 15 continuous seconds.',
+        touch: 'Use the helm buttons to keep the bow toward the glowing ring for 15 continuous seconds.',
+        progress: 'course',
         text: 'Now <b>hold the course</b>: keep the bow on the glowing ring (within ~15°) for <b>15 seconds</b> without wandering. Small rudder, steady wind angle.',
-        done: (b, ctx) => ctx.onCourseTime > 15,
+        done: (b, ctx) => ctx.onCourseTime >= 15,
       },
-      { text: 'Steady hand! Sail through the ring to finish.', done: () => false },
+      {
+        title: 'Reach the ring', controls: 'helm', highlights: ['markInfo'], progress: 'distance',
+        keyboard: 'Sail through the glowing ring. Use small steering corrections and keep the sail filled.',
+        touch: 'Sail through the glowing ring. Use small steering corrections and keep the sail filled.',
+        text: 'Steady hand! Sail through the ring to finish.', done: () => false,
+      },
     ],
     takeaway:
       'Rule one of trim: <b>“When in doubt, let it out”</b> — ease until the sail luffs, then sheet back in until it stops. ' +
       'And a course is held with the <b>wind angle</b>: if the rose drifts, you drifted.',
-    next: 't-course',
   },
   {
     id: 'upwind',
@@ -76,7 +103,6 @@ export const LESSONS = [
     ],
     takeaway:
       'No boat can sail straight upwind. Progress to windward is a zigzag of close-hauled legs called <b>beating</b>. If you stall head-to-wind (“in irons”), the boat drifts backwards until you fall off and refill the sails.',
-    next: 'tack',
   },
   {
     id: 'tack',
@@ -109,7 +135,6 @@ export const LESSONS = [
     takeaway:
       'Tack recipe: <b>speed → smooth helm → cross the eye of the wind → fill on the new side → trim & accelerate</b>. ' +
       'In the exam you get only a mark — <b>you</b> plan where to tack.',
-    next: 't-tack',
   },
   {
     id: 'gybe',
@@ -137,7 +162,6 @@ export const LESSONS = [
     ],
     takeaway:
       'Tack = bow through the wind (upwind). <b>Gybe = stern through the wind</b> (downwind) — always under control: sheet in, turn, ease out. Dead-downwind “by the lee” is the accidental-gybe danger zone.',
-    next: 't-gybe',
   },
   {
     id: 'mob-easy',
@@ -168,7 +192,6 @@ export const LESSONS = [
     takeaway:
       'The MOB shape: <b>clear away → turn → approach from downwind → luff sails to stop</b> with the casualty in the front third, to windward. ' +
       'Sails have no brakes — the luff is your brake. Next: same drill in real wind.',
-    next: 'mob-med',
   },
   {
     id: 'mob-med',
@@ -195,7 +218,6 @@ export const LESSONS = [
     takeaway:
       'More wind = more way to kill. Ease early, aim a touch below the ring, and let the luffing sail bleed the last knots. ' +
       'One more level: gusts and shifts.',
-    next: 'mob-hard',
   },
   {
     id: 'mob-hard',
@@ -219,7 +241,6 @@ export const LESSONS = [
     review: 'mob-med',
     takeaway:
       'If you can park next to a lifebuoy in a gusty 18 knots, the exam version will feel easy. Take the test — <b>אדם בים</b> awaits.',
-    next: 't-mob',
   },
   {
     id: 'free',
@@ -254,7 +275,6 @@ export const TESTS = [
     timeLimit: 240,
     requires: ['course'],
     takeaway: 'Course held, mark made. That is exam exercise one.',
-    next: 'upwind',
   },
   {
     id: 't-tack',
@@ -276,7 +296,6 @@ export const TESTS = [
     timeLimit: 180,
     requires: ['tack'],
     takeaway: 'Bow through the eye of the wind, sails filled, mark fetched — a clean מהפך.',
-    next: 'gybe',
   },
   {
     id: 't-gybe',
@@ -297,7 +316,6 @@ export const TESTS = [
     timeLimit: 180,
     requires: ['gybe'],
     takeaway: 'Stern through the wind, boom crossed under control — a clean סיבוב.',
-    next: 'mob-easy',
   },
   {
     id: 't-mob',
@@ -318,7 +336,6 @@ export const TESTS = [
     timeLimitMsg: 'Too long — a casualty can’t wait five minutes. Plan a tighter return.',
     requires: ['mob-easy'],
     takeaway: 'Casualty recovered: boat standing, ring in the front third, to windward. The exam’s key exercise — well sailed.',
-    next: 't-beat',
   },
   {
     id: 't-beat',
@@ -336,7 +353,6 @@ export const TESTS = [
     timeLimit: 420,
     requires: ['upwind', 'tack'],
     takeaway: 'A windward mark, earned the only way there is — one close-hauled leg at a time.',
-    next: 't-triangle',
   },
   {
     id: 't-triangle',
@@ -357,7 +373,6 @@ export const TESTS = [
     timeLimit: 600,
     requires: ['tack', 'gybe'],
     takeaway: 'Beat, reach and run in one course — the full exam picture. That’s yacht sailing.',
-    next: 'free',
   },
 ];
 
