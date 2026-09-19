@@ -1,6 +1,6 @@
 // boat.js — procedural yacht with live, wind-shaped sails
 import * as THREE from '../vendor/three.module.min.js';
-import { waveHeight } from './ocean.js';
+import { waveHeight, waveSlope } from './sea-state.js';
 
 const MAST_H = 13.5;
 const BOOM_LEN = 4.9;
@@ -515,8 +515,11 @@ export class BoatView {
     const f = boat.forward();
     const ahead = waveHeight(boat.pos.x + f.x * 4, boat.pos.z + f.z * 4, envTime);
     const astern = waveHeight(boat.pos.x - f.x * 4, boat.pos.z - f.z * 4, envTime);
-    const pitch = (astern - ahead) * 0.09 + boat.speed * 0.004;
-    this.heelGroup.rotation.z = boat.heel;
+    const pitch = (astern - ahead) * 0.11 + boat.speed * 0.004;
+    const slope = waveSlope(boat.pos.x, boat.pos.z, envTime, 3);
+    const stb = boat.starboard();
+    const waveRoll = -(slope.x * stb.x + slope.z * stb.z) * 0.7;
+    this.heelGroup.rotation.z = boat.heel + waveRoll;
     this.heelGroup.rotation.x = pitch;
 
     // Rudder, wheel & tiller. A wheel turns into the turn; a tiller is pushed

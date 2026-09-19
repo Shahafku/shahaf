@@ -21,31 +21,85 @@ npx serve .
 Then open <http://localhost:8000>. No build step, no external network — Three.js
 is vendored in `vendor/`.
 
+## Getting started
+
+On your first visit, choose **I’m new to sailing** for Learn or **I know the basics**
+for Exam. Each track has a short introduction before **Set sail**. The simulator
+and its controls stay paused during these entry screens.
+
+- **Learn:** seven sequential lessons with coaching. Lesson 1 begins with a paused
+  controls introduction, then guides you through filling the sail, holding your
+  course for 15 continuous seconds, and reaching the ring. Guidance can be hidden
+  and reopened without skipping the objectives.
+- **Exam:** six sequential, goal-only tests with pass/fail results. Test 1 is open
+  immediately; passing a test unlocks the next. Lessons are not required for exam
+  access. Failed tests can be retried or followed by a review of the relevant lesson.
+- **Free Sail:** open water with live wind controls, gusts and shifts, plus an AI
+  yacht for practicing COLREGs Rule 12 right-of-way.
+
+Use **Learn** or **Exam** in the simulator menu to switch tracks. Switching starts
+that track’s next unfinished available exercise and discards the current attempt.
+Completed exercises remain available for replay. Completed tracks offer replay
+choices, the other track, and Free Sail.
+
+Your selected track and completed exercises are saved in this browser. Returning
+visitors resume the next unfinished available exercise; partial attempts are not
+saved. **Replay introduction** reopens the welcome flow without clearing progress.
+If browser storage is unavailable, progress remains available for the current
+session only. Existing saved progress is preserved when the new welcome appears.
+
 ## What you'll learn
 
 | Lesson | Skill |
 |---|---|
-| 1 · Feel the Wind | Reading the wind rose, sheeting in until the sail fills, beam reaching |
+| 1 · Hold a Course | Fill the sail, hold a steady course for 15 seconds, reach the ring |
 | 2 · The No-Go Zone | Why you can't sail straight upwind; getting out of irons; close-hauled |
 | 3 · Tacking | Turning the bow through the wind with speed; beating upwind; COLREGs Rule 12 |
-| 4 · Downwind & the Gybe | Broad reaching, running, controlled gybes, "by the lee" danger |
-| 5 · Round the Course | A timed triangle regatta — beat, reach, run |
-| ∞ · Free Sail | Open water with live wind controls, gusts and shifts — plus an AI yacht for practicing COLREGs Rule 12 right-of-way |
+| 4 · The Gybe | Broad reaching, running, controlled gybes, "by the lee" danger |
+| 5 · Man Overboard I | Return from downwind and stop beside the casualty in light, steady wind |
+| 6 · Man Overboard II | Repeat the recovery in a working breeze |
+| 7 · Man Overboard III | Recover in strong, gusty, shifting wind with exam-style failure conditions |
+
+The Exam track tests **Hold a Course**, **Tack**, **Gybe**, **Man Overboard**,
+**Beat to Windward**, and a timed **Triangle Course**, in that order.
 
 ## Controls
 
 | Key | Action |
 |---|---|
-| `A`/`D` or `←`/`→` | Rudder |
-| `W`/`S` or `↑`/`↓` | Sheet in / ease out |
-| `T` | Auto-trim assist |
-| `E` | Helm: wheel (car-like) · tiller (push opposite) |
-| `C` | Camera: chase · helm · tactical top-down |
+| `←`/`→` | Move the helm left / right |
+| `↑`/`↓` | Sheet in / ease out |
+| `T` | Auto-trim assist (starts off in Lesson 1) |
+| `E` | Helm: wheel (turn toward the desired direction) · tiller (move opposite) |
+| `C` | Camera: chase · helm · tactical top-down · stern |
 | `P` | Points-of-sail diagram |
-| `1`–`6` | Select lesson |
+| `1`–`7` | Select an available lesson |
+| `8` | Free Sail |
+| `Shift` + `1`–`6` | Select an available exam test |
 | `M` | Sound |
 | `H` | Help |
 | drag / wheel | Orbit / zoom (chase camera) |
+
+On touch devices, hold the helm or sail buttons to steer and trim. Sail-in is
+**−**, and ease-out is **+**. Narrow screens put track choices and tools in the
+**☰ menu**. Lesson 1 instructions adapt to the input device and selected helm mode.
+
+## Verification
+
+Run the dependency-free runtime regression checks with Node.js:
+
+```bash
+node --test tests/progression.test.mjs
+```
+
+With the repository served over HTTP, open [`tests/browser.html`](tests/browser.html)
+and choose **Run checks**. The browser checks exercise the real app in isolated
+frames with in-memory storage, so they do not change your saved progress.
+
+See [`tests/README.md`](tests/README.md) for coverage and manual layout checks.
+Touch input is simulated in the browser checks; also verify on a physical touch
+device when changing mobile interactions. Use [`force-compass.html`](force-compass.html)
+to inspect the force model independently.
 
 ## The physics (short version)
 
@@ -71,6 +125,8 @@ index.html            UI shell + HUD DOM
 force-compass.html    interactive physics visualization (drag wind, see forces)
 styles.css            HUD styling
 src/main.js           renderer, cameras, input, audio, game loop
+src/onboarding.js     welcome, track selection, resume and completion screens
+src/storage.js        browser storage with session-memory fallback
 src/physics.js        wind + yacht dynamics (the model)
 src/boat.js           procedural yacht, wind-shaped cloth sails, wake
 src/ocean.js          water/sky shaders, buoys, life rings, wind streaks
@@ -80,5 +136,6 @@ src/curriculum.js     curriculum data — LEARN lessons + EXAM tests
 src/mob.js            man-overboard scenario
 src/traffic.js        AI traffic yacht (COLREGs Rule 12 right-of-way)
 docs/RESEARCH.md      nautical rules & physics research behind the model
+tests/                runtime and browser regression checks
 vendor/               three.js (vendored, offline-friendly)
 ```

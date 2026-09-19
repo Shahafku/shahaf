@@ -1,25 +1,17 @@
 // ocean.js — water, sky, sun and buoys for Sail Trainer 3D
 import * as THREE from '../vendor/three.module.min.js';
+import { setSeaState, waveHeight } from './sea-state.js';
+export { waveHeight } from './sea-state.js';
 
-// Shared wave set (world-space) so the CPU can replicate heights for the boat.
-export const WAVES = [
-  { dir: [1.0, 0.35], amp: 0.22, len: 23.0, speed: 1.15 },
-  { dir: [0.55, 1.0], amp: 0.14, len: 11.0, speed: 1.6 },
-  { dir: [-0.8, 0.6], amp: 0.07, len: 5.5, speed: 2.2 },
-];
-
-export function waveHeight(x, z, t) {
-  let y = 0;
-  for (const w of WAVES) {
-    const k = (Math.PI * 2) / w.len;
-    const d = (x * w.dir[0] + z * w.dir[1]) / Math.hypot(w.dir[0], w.dir[1]);
-    y += w.amp * Math.sin(d * k + t * w.speed);
-  }
-  return y;
-}
+export const NEAR_WATER_SIZE = 1800;
+export const NEAR_WATER_SEGMENTS = 360;
+export const MIN_DISPLACED_WAVELENGTH = 11;
 
 const WATER_VERT = /* glsl */ `
 uniform float uTime;
+uniform float uWaveScale;
+uniform float uRippleScale;
+uniform float uDisplacement;
 varying vec3 vWorld;
 varying vec3 vNormal;
 varying float vCrest;
@@ -36,15 +28,11 @@ void main() {
   vec4 wp = modelMatrix * vec4(position, 1.0);
   vec2 p = wp.xz;
   vec3 acc = vec3(0.0);
-  acc += waveNDH(p, vec2(1.0, 0.35), 0.22, 23.0, 1.15, uTime);
-  acc += waveNDH(p, vec2(0.55, 1.0), 0.14, 11.0, 1.6, uTime);
-  acc += waveNDH(p, vec2(-0.8, 0.6), 0.07, 5.5, 2.2, uTime);
-  // fine ripples for sparkle
-  acc += waveNDH(p, vec2(0.9, -0.4), 0.025, 2.1, 3.4, uTime);
-  acc += waveNDH(p, vec2(-0.2, -1.0), 0.02, 1.3, 4.1, uTime);
-  wp.y += acc.z;
-  vCrest = acc.z;
-  vNormal = normalize(vec3(acc.x, 1.0, acc.y));
+  acc += waveNDH(p, vec2(1.0, 0.35), 0.22 * uWaveScale, 23.0, 1.15, uTime);
+  acc += waveNDH(p, vec2(0.55, 1.0), 0.14 * uWaveScale, 11.0, 1.6, uTime);
+  wp.y += acc.z * uDisplacement;
+  vCrest = acc.z * uDisplacement;
+  vNormal = normalize(vec3(acc.x * uDisplacement, 1.0, acc.y * uDisplacement));
   vWorld = wp.xyz;
   gl_Position = projectionMatrix * viewMatrix * wp;
 }
@@ -57,12 +45,25 @@ uniform vec3 uShallow;
 uniform vec3 uSky;
 uniform vec3 uCamPos;
 uniform float uTime;
+uniform float uWaveScale;
+uniform float uRippleScale;
 varying vec3 vWorld;
 varying vec3 vNormal;
 varying float vCrest;
 
+vec2 waveGradient(vec2 p, vec2 dir, float amp, float len, float speed) {
+  float k = 6.28318 / len;
+  vec2 d = normalize(dir);
+  float phase = dot(p, d) * k + uTime * speed;
+  return -d * amp * k * cos(phase);
+}
+
 void main() {
-  vec3 N = normalize(vNormal);
+  vec2 detail = vec2(0.0);
+  detail += waveGradient(vWorld.xz, vec2(-0.8, 0.6), 0.07 * uWaveScale, 5.5, 2.2);
+  detail += waveGradient(vWorld.xz, vec2(0.9, -0.4), 0.025 * uRippleScale, 2.1, 3.4);
+  detail += waveGradient(vWorld.xz, vec2(-0.2, -1.0), 0.02 * uRippleScale, 1.3, 4.1);
+  vec3 N = normalize(vNormal + vec3(detail.x, 0.0, detail.y));
   vec3 V = normalize(uCamPos - vWorld);
   float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
   fres = mix(0.06, 0.75, fres);
@@ -137,6 +138,9 @@ export class Environment {
     // --- Water
     this.waterUniforms = {
       uTime: { value: 0 },
+      uWaveScale: { value: 1 },
+      uRippleScale: { value: 1 },
+      uDisplacement: { value: 1 },
       uSunDir: { value: this.sunDir },
       uDeep: { value: new THREE.Color('#0b3d5c') },
       uShallow: { value: new THREE.Color('#14688f') },
@@ -144,7 +148,7 @@ export class Environment {
       uCamPos: { value: new THREE.Vector3() },
     };
     this.water = new THREE.Mesh(
-      new THREE.PlaneGeometry(1700, 1700, 196, 196),
+      new THREE.PlaneGeometry(NEAR_WATER_SIZE, NEAR_WATER_SIZE, NEAR_WATER_SEGMENTS, NEAR_WATER_SEGMENTS),
       new THREE.ShaderMaterial({
         vertexShader: WATER_VERT,
         fragmentShader: WATER_FRAG,
@@ -152,7 +156,24 @@ export class Environment {
       })
     );
     this.water.rotation.x = -Math.PI / 2;
+    this.water.renderOrder = -1;
     scene.add(this.water);
+    this.distantWaterUniforms = THREE.UniformsUtils.clone(this.waterUniforms);
+    this.distantWaterUniforms.uSunDir.value = this.sunDir;
+    this.distantWaterUniforms.uSky.value = this.skyColor;
+    this.distantWaterUniforms.uDisplacement.value = 0;
+    this.distantWater = new THREE.Mesh(
+      new THREE.PlaneGeometry(9000, 9000),
+      new THREE.ShaderMaterial({
+        vertexShader: WATER_VERT,
+        fragmentShader: WATER_FRAG,
+        uniforms: this.distantWaterUniforms,
+      }),
+    );
+    this.distantWater.rotation.x = -Math.PI / 2;
+    this.distantWater.position.y = -1;
+    this.distantWater.renderOrder = -2;
+    scene.add(this.distantWater);
 
     // --- Lights
     const sun = new THREE.DirectionalLight(0xfff2df, 2.6);
@@ -176,16 +197,33 @@ export class Environment {
     }
     scene.add(this.clouds);
 
-    scene.fog = new THREE.Fog(this.skyColor.getHex(), 350, 900);
+    scene.fog = new THREE.Fog(this.skyColor.getHex(), 900, 7000);
+    this.setSeaState('small');
+  }
+
+  setSeaState(id) {
+    const state = setSeaState(id);
+    this.waterUniforms.uWaveScale.value = state.waveScale;
+    this.waterUniforms.uRippleScale.value = state.rippleScale;
+    this.waterUniforms.uDeep.value.set(state.deep);
+    this.waterUniforms.uShallow.value.set(state.shallow);
+    this.distantWaterUniforms.uWaveScale.value = state.waveScale;
+    this.distantWaterUniforms.uRippleScale.value = state.rippleScale;
+    this.distantWaterUniforms.uDeep.value.set(state.deep);
+    this.distantWaterUniforms.uShallow.value.set(state.shallow);
+    return state;
   }
 
   update(dt, camera, focus) {
     this.time += dt;
     this.waterUniforms.uTime.value = this.time;
     this.waterUniforms.uCamPos.value.copy(camera.position);
+    this.distantWaterUniforms.uTime.value = this.time;
+    this.distantWaterUniforms.uCamPos.value.copy(camera.position);
     // Keep the ocean & sky centred on the action (procedural waves are
     // world-space so the plane can slide invisibly).
     this.water.position.set(focus.x, 0, focus.z);
+    this.distantWater.position.set(focus.x, -1, focus.z);
     this.sky.position.set(camera.position.x, 0, camera.position.z);
     this.clouds.position.set(focus.x, 0, focus.z);
   }
@@ -214,9 +252,9 @@ function makeCloudTexture() {
 // Faint streaks that drift with the true wind just above the water, so the
 // player can SEE the breeze and its shifts.
 export class WindStreaks {
-  constructor(scene, count = 90) {
+  constructor(scene, count = 138) {
     this.count = count;
-    this.range = 220; // box half-size around the focus point
+    this.range = 300; // box half-size around the focus point
     const pos = new Float32Array(count * 2 * 3);
     this.head = new Float32Array(count * 2); // per-streak x,z head position
     this.phase = new Float32Array(count);
@@ -229,7 +267,7 @@ export class WindStreaks {
     this.geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     this.lines = new THREE.LineSegments(
       this.geo,
-      new THREE.LineBasicMaterial({ color: 0xdfeefb, transparent: true, opacity: 0.34, depthWrite: false })
+      new THREE.LineBasicMaterial({ color: 0xeaf7ff, transparent: true, opacity: 0.52, depthWrite: false })
     );
     this.lines.frustumCulled = false;
     scene.add(this.lines);
@@ -237,7 +275,7 @@ export class WindStreaks {
 
   update(dt, wind, focus, t) {
     const v = wind.vel();
-    const len = Math.min(9, 1.2 + wind.speed * 0.55); // streak length ~ wind speed
+    const len = Math.min(12, 1.8 + wind.speed * 0.72); // streak length ~ wind speed
     const nx = v.x / (wind.speed || 1), nz = v.z / (wind.speed || 1);
     const pos = this.geo.attributes.position.array;
     const R = this.range;
@@ -274,7 +312,7 @@ export function makeBuoy(color = 0xff5a1f) {
   pole.position.y = 2.6;
   g.add(pole);
   const flag = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.1, 0.65),
+    new THREE.PlaneGeometry(1.6, 0.85),
     new THREE.MeshStandardMaterial({ color: 0xffe14d, side: THREE.DoubleSide })
   );
   flag.position.set(0.55, 3.4, 0);

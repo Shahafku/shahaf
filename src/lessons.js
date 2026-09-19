@@ -9,10 +9,11 @@ import { storage } from './storage.js';
 const PROGRESS_KEY = 'sail.progress.v2';
 
 export class LessonManager {
-  constructor(scene, hud, view) {
+  constructor(scene, hud, view, environment = null) {
     this.scene = scene;
     this.hud = hud;
     this.view = view;
+    this.environment = environment;
     this.buoys = [];
     this.current = LESSONS[0];
     this.stepIdx = 0;
@@ -92,6 +93,7 @@ export class LessonManager {
     this.hud.setMode(L.type === 'test' ? 'exam' : 'full');
 
     // World state
+    this.environment?.apply(L.environment, L.type);
     wind.baseDirFrom = L.wind.dirFrom;
     wind.baseSpeed = L.wind.speed;
     wind.gustiness = L.wind.gustiness ?? (L.wind.live ? 0.18 : 0.10);
