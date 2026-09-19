@@ -2,6 +2,9 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { Wind, Boat, DEG, SHEET_MAX, clamp } from './physics.js';
 import { Environment } from './ocean.js';
+import { CoastScene } from './coast.js';
+import { COAST_LOCATIONS, locationSummary } from './coast-data.js';
+import { SEA_STATES } from './sea-state.js';
 import { BoatView } from './boat.js';
 import { HUD } from './hud.js';
 import { LessonManager } from './lessons.js';
@@ -20,14 +23,26 @@ renderer.toneMappingExposure = 1.05;
 document.getElementById('app').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 2000);
+const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 12000);
 
 const env = new Environment(scene);
+const coast = new CoastScene(scene);
+const worldEnvironment = {
+  apply(spec, type) {
+    const locationId = COAST_LOCATIONS[spec?.locationId] ? spec.locationId : 'tel-aviv';
+    const seaState = SEA_STATES[spec?.seaState] ? spec.seaState : 'small';
+    coast.setLocation(locationId);
+    env.setSeaState(seaState);
+    document.getElementById('environmentInfo').textContent = `📍 ${locationSummary(locationId, seaState)}`;
+    document.getElementById('coastLocation').value = locationId;
+    document.getElementById('seaState').value = seaState;
+  },
+};
 const wind = new Wind(0, 6.2);
 const boat = new Boat();
 const view = new BoatView(scene);
 const hud = new HUD();
-const lessons = new LessonManager(scene, hud, view);
+const lessons = new LessonManager(scene, hud, view, worldEnvironment);
 const traffic = new TrafficBoat(scene);
 const streaks = new WindStreaks(scene);
 
@@ -209,6 +224,12 @@ document.getElementById('posBtn').addEventListener('click', () =>
 // button and backdrop are display:none and this is inert.
 const menuBackdrop = document.getElementById('menuBackdrop');
 const compactMenu = matchMedia('(max-width: 860px)');
+const freePanelToggle = document.getElementById('freePanelToggle');
+function setFreePanel(expanded) {
+  document.body.classList.toggle('free-panel-collapsed', !expanded);
+  freePanelToggle.setAttribute('aria-expanded', String(expanded));
+  freePanelToggle.textContent = expanded ? 'Close' : 'Settings';
+}
 function setMenu(open) {
   const rail = document.getElementById('rail');
   const button = document.getElementById('menuBtn');
@@ -218,14 +239,20 @@ function setMenu(open) {
   if (open && compactMenu.matches) document.getElementById('learnTrack').focus();
   else if (rail.contains(document.activeElement)) button.focus();
 }
-compactMenu.addEventListener('change', () => setMenu(false));
+compactMenu.addEventListener('change', () => {
+  setMenu(false);
+  setFreePanel(!compactMenu.matches);
+});
 setMenu(false);
+setFreePanel(!compactMenu.matches);
 addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && document.body.classList.contains('menu-open')) setMenu(false);
 });
 document.getElementById('menuBtn').addEventListener('click', () =>
   setMenu(!document.body.classList.contains('menu-open')));
 menuBackdrop.addEventListener('click', () => setMenu(false));
+freePanelToggle.addEventListener('click', () =>
+  setFreePanel(freePanelToggle.getAttribute('aria-expanded') !== 'true'));
 
 // Mainsheet trim bar can be minimized on phones (the toggle is desktop-hidden).
 const trimToggle = document.getElementById('trimToggle');
@@ -320,6 +347,8 @@ document.getElementById('reviewBtn').addEventListener('click', () => {
 // Wind panel (free sail)
 const windDirInput = document.getElementById('windDir');
 const windSpdInput = document.getElementById('windSpd');
+const coastLocationInput = document.getElementById('coastLocation');
+const seaStateInput = document.getElementById('seaState');
 windDirInput.addEventListener('input', () => {
   wind.baseDirFrom = Number(windDirInput.value) * DEG;
   document.getElementById('windDirVal').textContent = windDirInput.value + '°';
@@ -327,6 +356,18 @@ windDirInput.addEventListener('input', () => {
 windSpdInput.addEventListener('input', () => {
   wind.baseSpeed = Number(windSpdInput.value) / 1.94384;
   document.getElementById('windSpdVal').textContent = windSpdInput.value + ' kn';
+});
+coastLocationInput.addEventListener('change', () => {
+  const item = lessons.lesson();
+  if (!item.free) return;
+  item.environment = { ...item.environment, locationId: coastLocationInput.value };
+  flow.enterItem(item);
+});
+seaStateInput.addEventListener('change', () => {
+  const item = lessons.lesson();
+  if (!item.free) return;
+  item.environment = { ...item.environment, seaState: seaStateInput.value };
+  worldEnvironment.apply(item.environment, item.type);
 });
 
 // Central application state: entry screens pause all sailing activity.
@@ -336,6 +377,7 @@ flow = new SailingFlow(lessons, (item) => {
   syncTrimBtn();
   view.update(0, boat, wind, env.time);
   updateCamera(1);
+  if (item.free) setFreePanel(!compactMenu.matches);
 }, (state) => {
   clearInput();
   setMenu(false);
@@ -348,7 +390,7 @@ document.getElementById('guidanceToggle').addEventListener('click', () => {
 
 // Debug/console handle (also used by automated tests)
 window.__sail = {
-  boat, wind, lessons, LESSONS, TESTS, ALL, byId, view, traffic, flow,
+  boat, wind, lessons, LESSONS, TESTS, ALL, byId, view, traffic, flow, env, coast, streaks, scene,
   select: (id) => selectItem(byId(id)),
   mob: () => lessons.mobCtl,
 };

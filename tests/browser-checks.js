@@ -5,7 +5,7 @@ function assert(condition, message) { if (!condition) throw new Error(message); 
 const pref = (track) => JSON.stringify({ version: 1, track });
 const progress = (done) => JSON.stringify({ done });
 let frame;
-async function fixture(values = {}, blocked = false, touch = false) {
+async function fixture(values = {}, blocked = false, touch = false, compact = false) {
   if (frame) {
     frame.contentDocument.querySelector('#app canvas')?.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
     frame.remove();
@@ -15,9 +15,15 @@ async function fixture(values = {}, blocked = false, touch = false) {
   const bootstrap = `<base href="${new URL('../', location.href)}"><script>
     const values = ${JSON.stringify(values)};
     window.fixtureValues = values;
-    if (${touch}) {
+    if (${touch} || ${compact}) {
       const nativeMatchMedia = window.matchMedia.bind(window);
-      window.matchMedia = (query) => query === '(pointer: coarse)' ? { matches: true } : nativeMatchMedia(query);
+      window.matchMedia = (query) => {
+        if (${touch} && query === '(pointer: coarse)') return { matches: true };
+        if (${compact} && query === '(max-width: 860px)') return {
+          matches: true, media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}
+        };
+        return nativeMatchMedia(query);
+      };
     }
     Object.defineProperty(window, 'localStorage', { value: {
       getItem(key) { if (${blocked}) throw new Error('Storage disabled'); return values[key] ?? null; },
@@ -135,6 +141,46 @@ const cases = [
     d.querySelector('#replayChoices button').click();
     assert(a.flow.state === 'sailing', 'Lesson 1 replay enters simulator directly');
     assert(a.lessons.stepIdx === 0 && !a.boat.autoTrim, 'Lesson 1 replay starts fresh');
+  }],
+  ['coast, sea and wind cues follow activities and Free Sail controls', async () => {
+    const { app: a, d, w, click } = await fixture();
+    click('chooseLearn'); click('setSailBtn');
+    assert(a.coast.locationId === 'tel-aviv', 'Lesson 1 loads Tel Aviv');
+    assert(!a.scene.children.some((child) => child.name === 'True wind source teaching cue'), 'lesson has no teaching arrow');
+    assert(a.streaks.count === 138, 'lesson shows denser wind streaks');
+    assert(d.getElementById('environmentInfo').textContent.includes('Calm water'), 'briefing names sea state');
+    assert(!d.getElementById('environmentInfo').textContent.includes('arrow'), 'briefing omits the removed arrow');
+    a.flow.enterItem(a.byId('t-course'));
+    assert(a.streaks.count === 138, 'exam retains the same wind streak density');
+    for (const item of a.ALL) {
+      a.lessons.start(item, a.boat, a.wind);
+      assert(a.coast.locationId === item.environment.locationId, `${item.id} loads its coast`);
+      assert(d.getElementById('environmentInfo').textContent.includes(a.coast.group.name.replace('Coast · ', '')), `${item.id} names its coast`);
+      assert(a.coast.scene.children.filter((child) => child.userData.coastScene).length === 1, `${item.id} leaves one coast scene`);
+    }
+    a.flow.enterItem(a.byId('free'));
+    a.boat.pos.x = 120;
+    const coastSelect = d.getElementById('coastLocation');
+    coastSelect.value = 'haifa';
+    coastSelect.dispatchEvent(new w.Event('change', { bubbles: true }));
+    assert(a.coast.locationId === 'haifa' && a.boat.pos.x === 0, 'coast switch restarts Free Sail offshore');
+    const group = a.coast.group;
+    const seaSelect = d.getElementById('seaState');
+    seaSelect.value = 'choppy';
+    seaSelect.dispatchEvent(new w.Event('change', { bubbles: true }));
+    assert(a.coast.group === group, 'sea switch reuses coastline scene');
+    assert(a.env.waterUniforms.uWaveScale.value > 1, 'choppy preset reaches water shader');
+    assert(a.streaks.count === 138, 'Free Sail retains denser wind streaks');
+  }],
+  ['compact Free Sail settings open on demand', async () => {
+    const { app: a, d, click } = await fixture({}, false, false, true);
+    click('chooseLearn'); click('setSailBtn');
+    a.flow.enterItem(a.byId('free'));
+    assert(d.body.classList.contains('free-panel-collapsed'), 'compact layout starts with settings collapsed');
+    assert(d.getElementById('freePanelToggle').getAttribute('aria-expanded') === 'false', 'collapsed state is exposed');
+    click('freePanelToggle');
+    assert(!d.body.classList.contains('free-panel-collapsed'), 'settings can be expanded');
+    assert(d.getElementById('freePanelToggle').getAttribute('aria-expanded') === 'true', 'expanded state is exposed');
   }],
   ['touch guidance and modal keyboard focus adapt to the input device', async () => {
     const { app: a, d, w, click } = await fixture({}, false, true);

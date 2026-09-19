@@ -21,6 +21,7 @@
 <!-- Lesson panel (top-left) -->
 <div id="lessonPanel" class="panel">
   <div id="lessonTitle" tabindex="-1">Lesson</div>
+  <div id="environmentInfo" class="environment-info"></div>
   <div id="lessonBrief" class="brief"></div>
   <div id="lessonStep" class="step"></div>
   <section id="tutorialCoach" hidden aria-label="Lesson guidance">
@@ -83,11 +84,27 @@
 
 <!-- Wind panel (free sail) -->
 <div id="windPanel" class="panel">
-  <div class="ptitle">WIND</div>
-  <label>Direction <b id="windDirVal">0°</b></label>
-  <input id="windDir" type="range" min="0" max="359" value="0" />
-  <label>Speed <b id="windSpdVal">12 kn</b></label>
-  <input id="windSpd" type="range" min="4" max="28" value="12" />
+  <div class="ptitle"><span>FREE SAIL</span><button id="freePanelToggle" type="button" aria-expanded="true" aria-controls="freePanelBody">Settings</button></div>
+  <div id="freePanelBody">
+    <label for="coastLocation">Coast</label>
+    <select id="coastLocation">
+      <option value="tel-aviv">Tel Aviv</option>
+      <option value="haifa">Haifa</option>
+      <option value="bat-yam">Bat Yam</option>
+      <option value="netanya">Netanya</option>
+    </select>
+    <label for="seaState">Sea</label>
+    <select id="seaState">
+      <option value="calm">Calm water</option>
+      <option value="small" selected>Small waves</option>
+      <option value="choppy">Choppy sea</option>
+    </select>
+    <div class="panel-subtitle">WIND</div>
+    <label>Direction <b id="windDirVal">0°</b></label>
+    <input id="windDir" type="range" min="0" max="359" value="0" />
+    <label>Speed <b id="windSpdVal">12 kn</b></label>
+    <input id="windSpd" type="range" min="4" max="28" value="12" />
+  </div>
 </div>
 
 <!-- Touch controls -->
@@ -124,7 +141,9 @@
     <tr><td>drag / wheel</td><td>orbit / zoom (chase cam)</td></tr>
   </table>
   <div class="hint">Read the wind rose: <span style="color:#4fa8ff">blue = true wind</span>,
-    <span style="color:#ffb14f">orange = apparent wind</span>, red wedge = no-go zone.</div>
+    <span style="color:#ffb14f">orange = apparent wind</span>, red wedge = no-go zone.
+    Surface streaks travel with the true wind, away from its source.</div>
+  <div class="attribution">Scenery: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors · ODbL</a> · <a href="https://dataspace.copernicus.eu/" target="_blank" rel="noopener">Copernicus DEM</a></div>
 </div>
 
 </div><!-- simulator -->

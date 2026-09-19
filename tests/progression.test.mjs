@@ -22,6 +22,19 @@ function setup(id = 'course') {
   manager.start(id, boat, wind);
   return { manager, boat, wind };
 }
+test('starting any activity applies its environment through the shared runtime path', () => {
+  const applied = [];
+  const hud = { setMode() {}, setTip() {}, setTutorial() {} };
+  const environment = { apply: (spec, type) => applied.push({ spec, type }) };
+  const manager = new LessonManager(new THREE.Scene(), hud, {}, environment);
+  const boat = new Boat(), wind = new Wind();
+  manager.start('course', boat, wind);
+  manager.start('t-gybe', boat, wind);
+  assert.deepEqual(applied, [
+    { spec: { locationId: 'tel-aviv', seaState: 'calm' }, type: 'lesson' },
+    { spec: { locationId: 'bat-yam', seaState: 'small' }, type: 'test' },
+  ]);
+});
 test('exam entry does not require lessons; later exams require the previous pass', () => {
   const { manager } = setup();
   assert.equal(manager.isUnlocked(byId('t-course')), true);
