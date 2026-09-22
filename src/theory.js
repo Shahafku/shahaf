@@ -20,26 +20,29 @@ export const THEORY_STAGES = Object.freeze([
   {
     title: 'How far out should the sail be?',
     focus: 'WATCH THE SAIL',
-    lead: 'Now focus on the sail, not the route. Compare its position at three angles: close in, halfway out, far out.',
+    lead: 'Watch how far the sail is let out as the boat turns from facing the wind to sailing with the wind behind it.',
     transition: 'Turning now: watch the sail open or close with the course.',
-    takeaway: 'Simple rule: wind near the bow, pull in. Wind farther behind, ease out. Fine-tune to the wind you feel aboard.',
+    takeaway: 'Outside the no-go zone: wind near the bow, sail in. Wind farther behind, sail out. Pointing into the wind? Turn away first.',
     beats: [
+      { heading: 0, sheet: 12, speed: 0.2, caption: 'No-go zone → the sail flaps. Pulling it in will not help; turn away from the wind.' },
       { heading: 45, sheet: 12, speed: 2.2, caption: 'Wind near the bow → pull the sail in close.' },
       { heading: 90, sheet: 45, speed: 2.6, caption: 'Wind from the side → let the sail halfway out.' },
       { heading: 135, sheet: 75, speed: 2.2, caption: 'Wind farther behind → ease the sail well out.' },
+      { heading: 175, sheet: 85, speed: 1.8, caption: 'Run → wind almost directly behind the boat. Let the sail far out.' },
     ],
   },
   {
-    title: 'Turn and adjust',
-    focus: 'WATCH STEERING AND SAIL TOGETHER',
-    lead: 'Steering changes where the wind meets the sail. Adjust both together.',
-    transition: 'Turning now: steer and trim together.',
-    takeaway: 'Turn toward the wind, pull in. Turn away, ease out. You will learn tacking and gybing later.',
+    title: 'How do I know the sail is set correctly?',
+    focus: 'SAME COURSE · WATCH THE SAIL',
+    lead: 'Keep the boat pointing the same way. Watch the sail flap when it is too far out, then fill as you pull it in.',
+    transition: 'Adjusting the sail while holding the same course.',
+    takeaway: 'Let the sail out until it just starts to flap. Then pull it in a little until the flapping stops.',
+    // Fixed course and speed keep apparent wind steady for this trim comparison.
     beats: [
-      { heading: 90, sheet: 45, speed: 2.6, caption: 'Across the wind → the sail sits halfway out.' },
-      { heading: 45, sheet: 12, speed: 2.2, caption: 'Turn toward the wind → pull the sail in.' },
-      { heading: 90, sheet: 45, speed: 2.6, caption: 'Turn away again → ease the sail halfway out.' },
-      { heading: 135, sheet: 75, speed: 2.2, caption: 'Turn farther away → ease the sail even more.' },
+      { heading: 90, sheet: 75, speed: 2.6, caption: 'Too far out: the sail is flapping. Pull it in slowly.', transition: 'Pulling the sail in slowly. Watch the flapping fade.' },
+      { heading: 90, sheet: 55, speed: 2.6, caption: 'Stop here: the sail has filled and stopped flapping.', transition: 'Now let it out a little. Watch for the first flutter.' },
+      { heading: 90, sheet: 61, speed: 2.6, caption: 'It starts to flap again. Pull it back in just a little.', transition: 'Pulling in a little until the sail fills again.' },
+      { heading: 90, sheet: 55, speed: 2.6, caption: 'Filled again. This is how you find the right sail setting.', transition: 'Watch again: letting the sail too far out makes it flap.' },
     ],
   },
 ]);
@@ -67,7 +70,7 @@ export function sampleTheoryPose(stageIndex, elapsed, { reducedMotion = false } 
     heading,
     sheet: (current.sheet + (next.sheet - current.sheet) * blend) * DEG,
     speed: current.speed + (next.speed - current.speed) * blend,
-    caption: blend > 0 && blend < 1 ? stage.transition : current.caption,
+    caption: blend > 0 && blend < 1 ? (current.transition ?? stage.transition) : current.caption,
     point: pointOfSail(-heading).name,
   };
 }

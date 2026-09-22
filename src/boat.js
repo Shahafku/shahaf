@@ -500,7 +500,7 @@ export class BoatView {
   }
 
   // --------------------------------------------------------------- Update
-  update(dt, boat, wind, envTime, { wake = true } = {}) {
+  update(dt, boat, wind, envTime, { wake = true, snapSails = false } = {}) {
     this.time += dt;
     const t = this.time;
 
@@ -540,7 +540,9 @@ export class BoatView {
     // Flap depth follows the physics' continuous luff fraction (0 = drawing
     // cleanly, 1 = fully flogging); head-to-wind always flogs completely.
     const luffTarget = Math.max(boat.luff ?? (boat.luffing ? 1 : 0), Math.abs(boat.awa) < 0.15 ? 1 : 0);
-    this._flap = (this._flap ?? 0) + (luffTarget - (this._flap ?? 0)) * Math.min(1, 6 * dt);
+    // A paused tutorial step must show its new sail shape without advancing time.
+    this._flap = snapSails ? luffTarget
+      : (this._flap ?? 0) + (luffTarget - (this._flap ?? 0)) * Math.min(1, 6 * dt);
     const flap = this._flap;
     const boomSign = Math.sign(boat.boom) || 1; // + = boom carried to starboard
     // Sail bellies to leeward (the side the boom is on). +boom sweeps the tip

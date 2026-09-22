@@ -55,6 +55,8 @@ export class TheoryDemo {
     this.boat.sheet = pose.sheet;
     this.boat.speed = pose.speed;
     this.boat.rudder = 0;
+    // Keep the trim-only comparison at a steady apparent wind angle.
+    if (this.stage === 2) this.boat.latVel = 0;
     const visualDt = this.paused || reducedMotion ? 0 : dt;
     this.boat.update(visualDt, this.wind);
     if (dt === 0) {
@@ -65,7 +67,7 @@ export class TheoryDemo {
     this.boat.pos.x = 0;
     this.boat.pos.z = 0;
     this.boat.speed = pose.speed;
-    this.view.update(visualDt, this.boat, this.wind, this.env.time, { wake: false });
+    this.view.update(visualDt, this.boat, this.wind, this.env.time, { wake: false, snapSails: dt === 0 });
     this.camera.position.set(30, 20, 28);
     this.camera.lookAt(0, this.camera.aspect < 0.8 ? -3 : 6.5, 0);
     this.env.update(visualDt, this.camera, this.boat.pos);
