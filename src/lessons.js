@@ -337,7 +337,7 @@ function firstSentence(brief) {
 }
 
 function shortTitle(item) {
-  // 'Lesson 3 · Tacking · מהפך' → 'Tacking · מהפך'; tests keep 'Test N' prefix off too.
+  // 'Lesson 3 · Tacking' → 'Tacking'; tests keep 'Test N' prefix off too.
   const parts = item.title.split('·');
   return parts.length > 1 ? parts.slice(1).join('·').trim() : item.title;
 }

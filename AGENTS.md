@@ -14,7 +14,7 @@ bodies.
 **Sail Trainer 3D** — a browser-based 3D yacht-sailing simulator that teaches
 how wind really works (apparent wind, sail trim, the no-go zone, tacking,
 gybing) through a guided curriculum. It also models the **Israeli practical
-sailing exam** (המבחן המעשי): a LEARN track (coached lessons) and an EXAM track
+sailing exam**: a LEARN track (coached lessons) and an EXAM track
 (the same exercises, goal-only, pass/fail).
 
 Rendering is [Three.js](https://threejs.org/) (r160), **vendored** in

@@ -1,8 +1,8 @@
-// mob.js — man-overboard (אדם בים) exercise: a crewmate throws a lifebuoy
-// (גלגל הצלה) over the quarter; the helm must sail back and stop the boat
+// mob.js — man-overboard exercise: a crewmate throws a lifebuoy
+// over the quarter; the helm must sail back and stop the boat
 // with the ring close aboard in the front third of the boat, to windward —
 // the final picture the Israeli practical exam asks for:
-// "המצוף בשליש הקדמי של הספינה, הספינה עומדת, המצוף מעל לרוח".
+// Ring in the front third, boat stopped, ring to windward.
 import { DEG, wrapPi } from './physics.js';
 import { makeLifeRing, bobLifeRing } from './ocean.js';
 
@@ -93,7 +93,7 @@ export class MobController {
     m.ringDist = Math.hypot(dx, dz);
     m.ringRelBearing = wrapPi(brgTo - boat.heading);
     m.ringFwdOffset = dx * fwd.x + dz * fwd.z; // meters ahead of mid-ship
-    // "מעל לרוח": the ring lies toward where the wind comes from.
+    // Windward: the ring lies toward where the wind comes from.
     m.ringWindward = Math.abs(wrapPi(brgTo - wind.dirFrom)) < 80 * DEG;
 
     // A pass close aboard at speed that then opens up again = blown approach.
@@ -113,9 +113,9 @@ export class MobController {
 export function mobPassCondition(boat, ctx) {
   const m = ctx.mob;
   return !!(m && m.thrown &&
-    ctx.stoppedFor > 3 &&                       // הספינה עומדת
+    ctx.stoppedFor > 3 &&                       // boat stopped
     m.ringDist > 1.5 && m.ringDist < 8 &&       // boat-hook working range
-    m.ringFwdOffset > 1.6 &&                    // שליש קדמי (bow is at +4.9 m)
+    m.ringFwdOffset > 1.6 &&                    // front third (bow is at +4.9 m)
     Math.abs(m.ringRelBearing) < 70 * DEG &&
-    m.ringWindward);                            // המצוף מעל לרוח
+    m.ringWindward);                            // ring to windward
 }

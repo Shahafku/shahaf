@@ -331,7 +331,7 @@ export function makeBuoy(color = 0xff5a1f) {
   return g;
 }
 
-// A lifebuoy (גלגל הצלה) adrift for the man-overboard exercises: orange torus
+// A lifebuoy adrift for the man-overboard exercises: orange torus
 // with white grab bands, a small strobe, and a pulsing marker ring like the
 // course buoys (it stands in for a dan buoy's real-world visibility).
 export function makeLifeRing() {

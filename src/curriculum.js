@@ -1,5 +1,5 @@
 // curriculum.js — the school: LEARN lessons and EXAM tests, structured after
-// the Israeli sailing licence practical exam (המבחן המעשי). Lessons teach with
+// the Israeli sailing licence practical exam. Lessons teach with
 // full coaching; tests give only a goal, hide the aids, and can be failed.
 //
 // Wind blows FROM +Z ("north" on the HUD) in every item, so upwind = +Z.
@@ -180,7 +180,7 @@ export const LESSONS = [
     id: 'tack',
     type: 'lesson',
     environment: { locationId: 'haifa', seaState: 'small' },
-    title: 'Lesson 3 · Tacking · מהפך',
+    title: 'Lesson 3 · Tacking',
     tutorial: {
       wheel: 'Wheel: turn toward the side you want the bow to go.',
       tiller: 'Tiller: move opposite the direction you want the bow to go.',
@@ -191,7 +191,7 @@ export const LESSONS = [
       },
     },
     brief:
-      'A <b>tack (מהפך)</b> turns the bow through the wind onto the other close-hauled course. ' +
+      'A <b>tack</b> turns the bow through the wind onto the other close-hauled course. ' +
       '<b>Speed is the fuel</b> that carries you through the no-go zone — never tack slow.',
     wind: { dirFrom: 0, speed: 6.6 },
     boat: { x: -60, z: 0, heading: 40 * DEG, sheet: 12 * DEG },
@@ -253,9 +253,9 @@ export const LESSONS = [
     id: 'gybe',
     type: 'lesson',
     environment: { locationId: 'bat-yam', seaState: 'small' },
-    title: 'Lesson 4 · The Gybe · סיבוב',
+    title: 'Lesson 4 · The Gybe',
     brief:
-      'Downwind the sail becomes a <b>parachute</b> — ease it right out. To change sides with the wind astern you <b>gybe (סיבוב)</b>: the stern crosses the wind and the boom sweeps across. On a real boat, an uncontrolled boom is dangerous — control it with the sheet.',
+      'Downwind the sail becomes a <b>parachute</b> — ease it right out. To change sides with the wind astern you <b>gybe</b>: the stern crosses the wind and the boom sweeps across. On a real boat, an uncontrolled boom is dangerous — control it with the sheet.',
     wind: { dirFrom: 0, speed: 6.6 },
     boat: { x: 0, z: 320, heading: 170 * DEG, sheet: 30 * DEG },
     marks: [
@@ -281,9 +281,9 @@ export const LESSONS = [
     id: 'mob-easy',
     type: 'lesson',
     environment: { locationId: 'tel-aviv', seaState: 'calm' },
-    title: 'Lesson 5 · Man Overboard I · אדם בים',
+    title: 'Lesson 5 · Man Overboard I',
     brief:
-      'The exam’s hardest exercise: a crewmate throws a <b>lifebuoy (גלגל הצלה)</b> into the water. Bring the boat back and <b>stop</b> next to it — ' +
+      'The exam’s hardest exercise: a crewmate throws a <b>lifebuoy</b> into the water. Bring the boat back and <b>stop</b> next to it — ' +
       'ring in the <b>front third</b> of the boat, close aboard, <b>to windward of you</b>. Light, steady wind today: learn the shape of the approach.',
     wind: { dirFrom: 0, speed: 4.5, gustiness: 0.04, shiftiness: 1.5 },
     boat: { x: 0, z: 0, heading: 90 * DEG, sheet: 45 * DEG },
@@ -357,7 +357,7 @@ export const LESSONS = [
     fail: mobFail,
     review: 'mob-med',
     takeaway:
-      'If you can park next to a lifebuoy in a gusty 18 knots, the exam version will feel easy. Take the test — <b>אדם בים</b> awaits.',
+      'If you can park next to a lifebuoy in a gusty 18 knots, the exam version will feel easy. Take the <b>man-overboard test</b> next.',
   },
   {
     id: 'free',
@@ -382,7 +382,7 @@ export const TESTS = [
     id: 't-course',
     type: 'test',
     environment: { locationId: 'tel-aviv', seaState: 'calm' },
-    title: 'Test 1 · Hold a Course · שמירת כיוון',
+    title: 'Test 1 · Hold a Course',
     brief:
       '<b>Goal:</b> sail to the mark and pass through the ring, keeping the boat driving on a steady course relative to the wind.',
     wind: { dirFrom: 0, speed: 6.2 },
@@ -399,9 +399,9 @@ export const TESTS = [
     id: 't-tack',
     type: 'test',
     environment: { locationId: 'haifa', seaState: 'small' },
-    title: 'Test 2 · Tack · מהפך',
+    title: 'Test 2 · Tack',
     brief:
-      '<b>Goal:</b> plan and execute a <b>tack (מהפך)</b> — cross the wind bow-first — then fetch the mark on the new tack.',
+      '<b>Goal:</b> plan and execute a <b>tack</b> — cross the wind bow-first — then fetch the mark on the new tack.',
     wind: { dirFrom: 0, speed: 6.6 },
     boat: { x: -60, z: 0, heading: 40 * DEG, sheet: 12 * DEG },
     marks: [{ x: 120, z: 260 }],
@@ -411,19 +411,19 @@ export const TESTS = [
     fail: (b, ctx) =>
       ironsFail(8)(b, ctx) ||
       (ctx.gybed && !ctx.tacked
-        ? 'You turned the stern through the wind — that was a gybe (סיבוב), not a tack (מהפך).'
+        ? 'You turned the stern through the wind — that was a gybe, not a tack.'
         : null),
     timeLimit: 180,
     requires: ['tack'],
-    takeaway: 'Bow through the eye of the wind, sails filled, mark fetched — a clean מהפך.',
+    takeaway: 'Bow through the eye of the wind, sails filled, mark fetched — a clean tack.',
   },
   {
     id: 't-gybe',
     type: 'test',
     environment: { locationId: 'bat-yam', seaState: 'small' },
-    title: 'Test 3 · Gybe · סיבוב',
+    title: 'Test 3 · Gybe',
     brief:
-      '<b>Goal:</b> plan and execute a <b>gybe (סיבוב)</b> — cross the wind stern-first, boom under control — then fetch the mark on the new side.',
+      '<b>Goal:</b> plan and execute a <b>gybe</b> — cross the wind stern-first, boom under control — then fetch the mark on the new side.',
     wind: { dirFrom: 0, speed: 6.6 },
     boat: { x: 0, z: 320, heading: 170 * DEG, sheet: 30 * DEG },
     marks: [{ x: 140, z: 60 }],
@@ -432,20 +432,20 @@ export const TESTS = [
     pass: (b, ctx) => ctx.gybed && ctx.marksDone,
     fail: (b, ctx) =>
       ctx.tacked && !ctx.gybed
-        ? 'You turned the bow through the wind — that was a tack (מהפך). The examiner asked for a gybe (סיבוב).'
+        ? 'You turned the bow through the wind — that was a tack. The examiner asked for a gybe.'
         : null,
     timeLimit: 180,
     requires: ['gybe'],
-    takeaway: 'Stern through the wind, boom crossed under control — a clean סיבוב.',
+    takeaway: 'Stern through the wind, boom crossed under control — a clean gybe.',
   },
   {
     id: 't-mob',
     type: 'test',
     environment: { locationId: 'netanya', seaState: 'small' },
-    title: 'Test 4 · Man Overboard · אדם בים',
+    title: 'Test 4 · Man Overboard',
     brief:
       '<b>Goal:</b> when the lifebuoy goes in — bring the boat back and stop: the ring in the <b>front third</b> of the boat, close aboard, ' +
-      '<b>to windward</b>, boat standing. <i>המצוף בשליש הקדמי, הספינה עומדת, המצוף מעל לרוח.</i>',
+      '<b>to windward</b>, boat standing.',
     wind: { dirFrom: 0, speed: 6.5 },
     boat: { x: 0, z: 0, heading: 90 * DEG, sheet: 45 * DEG },
     marks: [],
@@ -463,7 +463,7 @@ export const TESTS = [
     id: 't-beat',
     type: 'test',
     environment: { locationId: 'haifa', seaState: 'small' },
-    title: 'Test 5 · Beat to Windward · הפלגה ברוח',
+    title: 'Test 5 · Beat to Windward',
     brief:
       '<b>Goal:</b> the mark is <b>dead upwind</b> — no boat sails straight there. Beat up to it in close-hauled legs (at least two tacks).',
     wind: { dirFrom: 0, speed: 6.6 },
@@ -481,7 +481,7 @@ export const TESTS = [
     id: 't-triangle',
     type: 'test',
     environment: { locationId: 'bat-yam', seaState: 'choppy' },
-    title: 'Test 6 · Triangle Course · מסלול משולש',
+    title: 'Test 6 · Triangle Course',
     brief:
       '<b>Goal:</b> round all three marks in order — <b>beat</b> up, <b>reach</b> across, <b>run</b> home. Every point of sail, against the clock.',
     wind: { dirFrom: 0, speed: 7.2 },
