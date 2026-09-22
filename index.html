@@ -14,7 +14,7 @@
 <!-- Brand -->
 <div id="brand">⛵ <b>Sail Trainer 3D</b><span> · learn the wind</span></div>
 
-<!-- Mobile menu (declutters the rail on phones; hidden on desktop) -->
+<!-- Navigation menu -->
 <button id="menuBtn" aria-label="Open menu" aria-controls="rail" aria-expanded="false" title="Menu">☰</button>
 <div id="menuBackdrop"></div>
 
@@ -78,19 +78,21 @@
   <div id="tipText" class="tip"></div>
 </div>
 
-<!-- Right rail -->
-<div id="rail">
+<!-- Navigation drawer -->
+<nav id="rail" aria-label="Sailing menu">
   <button id="learnTrack" class="track-switch" aria-pressed="false">Learn</button>
   <div id="lessonPicker" class="picker"></div>
   <button id="examTrack" class="track-switch" aria-pressed="false">Exam</button>
   <div id="testPicker" class="picker"></div>
   <button id="replayIntroBtn" class="railbtn wide">Replay introduction</button>
   <button id="autoTrimBtn" class="railbtn" title="Auto-trim (T)">AUTO<br/>TRIM</button>
+  <button id="audioBtn" class="railbtn" title="Sound (M)">🔇 Sound off</button>
+</nav>
+
+<div id="quickControls" aria-label="Sailing controls">
+  <button id="helpBtn" class="railbtn" title="Help (H)" onclick="document.getElementById('helpPanel').classList.toggle('show')">?</button>
   <button id="helmBtn" class="railbtn wide" title="Helm: wheel or tiller (E)">🛞 WHEEL</button>
   <button id="camBtn" class="railbtn wide" title="Camera (C)">📷 CHASE</button>
-  <button id="posBtn" class="railbtn" title="Points of sail diagram (P)">🧭</button>
-  <button id="audioBtn" class="railbtn" title="Sound (M)">🔇</button>
-  <button id="helpBtn" class="railbtn" title="Help (H)" onclick="document.getElementById('helpPanel').classList.toggle('show')">?</button>
 </div>
 
 <!-- Wind panel (free sail) -->
@@ -130,12 +132,6 @@
   </div>
 </div>
 
-<!-- Points of sail diagram -->
-<div id="posPanel" class="panel">
-  <div class="ptitle">POINTS OF SAIL <span class="pclose" onclick="document.getElementById('posPanel').classList.remove('show')">✕</span></div>
-  <canvas id="posDiagram" width="300" height="320"></canvas>
-</div>
-
 <!-- Help -->
 <div id="helpPanel" class="panel">
   <div class="ptitle">CONTROLS</div>
@@ -145,7 +141,7 @@
     <tr><td><kbd>T</kbd></td><td>auto-trim assist</td></tr>
     <tr><td><kbd>E</kbd></td><td>helm: wheel (car-like) · tiller (opposite)</td></tr>
     <tr><td><kbd>C</kbd></td><td>camera: chase · helm · tactical</td></tr>
-    <tr><td><kbd>P</kbd></td><td>points-of-sail diagram</td></tr>
+    <tr><td><kbd>P</kbd></td><td>points of sail on wind compass</td></tr>
     <tr><td><kbd>1</kbd>–<kbd>8</kbd></td><td>choose lesson</td></tr>
     <tr><td><kbd>⇧1</kbd>–<kbd>⇧6</kbd></td><td>choose exam test</td></tr>
     <tr><td><kbd>M</kbd></td><td>sound on/off</td></tr>

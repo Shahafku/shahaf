@@ -88,7 +88,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyC') cycleCamera();
   if (e.code === 'KeyM') toggleAudio();
   if (e.code === 'KeyH') document.getElementById('helpPanel').classList.toggle('show');
-  if (e.code === 'KeyP') document.getElementById('posPanel').classList.toggle('show');
+  if (e.code === 'KeyP') document.getElementById('windSectorsToggle').click();
   if (e.code === 'KeyE') toggleHelm();
   if (e.code === 'Enter' && lessons.completed) nextItem();
   if (e.code === 'Enter' && lessons.failed) lessons.start(lessons.lesson(), boat, wind);
@@ -214,16 +214,11 @@ function toggleAudio() {
   if (!audio) audio = makeAudio();
   audioOn = !audioOn;
   audio.master.gain.setTargetAtTime(audioOn ? 1 : 0, audio.ctx.currentTime, 0.2);
-  document.getElementById('audioBtn').textContent = audioOn ? '🔊' : '🔇';
+  document.getElementById('audioBtn').textContent = audioOn ? '🔊 Sound on' : '🔇 Sound off';
 }
 document.getElementById('audioBtn').addEventListener('click', toggleAudio);
-document.getElementById('posBtn').addEventListener('click', () =>
-  document.getElementById('posPanel').classList.toggle('show'));
 
-// ------------------------------------------------------------ Mobile menu
-// On phones the right rail (lesson picker, exam picker, tool buttons) lives in
-// a slide-in drawer so the sailing screen stays uncluttered. On desktop the
-// button and backdrop are display:none and this is inert.
+// ------------------------------------------------------- Navigation menu
 const menuBackdrop = document.getElementById('menuBackdrop');
 const compactMenu = matchMedia('(max-width: 860px)');
 const freePanelToggle = document.getElementById('freePanelToggle');
@@ -237,8 +232,11 @@ function setMenu(open) {
   const button = document.getElementById('menuBtn');
   document.body.classList.toggle('menu-open', open);
   button.setAttribute('aria-expanded', String(open));
-  rail.inert = compactMenu.matches && !open;
-  if (open && compactMenu.matches) document.getElementById('learnTrack').focus();
+  button.textContent = open ? '✕' : '☰';
+  button.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  button.title = open ? 'Close menu' : 'Open menu';
+  rail.inert = !open;
+  if (open) document.getElementById('learnTrack').focus();
   else if (rail.contains(document.activeElement)) button.focus();
 }
 compactMenu.addEventListener('change', () => {
@@ -248,7 +246,17 @@ compactMenu.addEventListener('change', () => {
 setMenu(false);
 setFreePanel(!compactMenu.matches);
 addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && document.body.classList.contains('menu-open')) setMenu(false);
+  if (!document.body.classList.contains('menu-open')) return;
+  if (event.key === 'Escape') setMenu(false);
+  if (event.key === 'Tab') {
+    const buttons = [document.getElementById('menuBtn'), ...document.querySelectorAll('#rail button:not(:disabled)')];
+    const first = buttons[0], last = buttons[buttons.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault(); last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault(); first.focus();
+    }
+  }
 });
 document.getElementById('menuBtn').addEventListener('click', () =>
   setMenu(!document.body.classList.contains('menu-open')));
@@ -334,7 +342,7 @@ function selectItem(item) {
     return;
   }
   flow.enterItem(item);
-  setMenu(false); // collapse the mobile drawer once we're under way
+  setMenu(false); // collapse the navigation drawer once we're under way
 }
 function nextItem() {
   flow.next();

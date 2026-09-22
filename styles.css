@@ -133,11 +133,6 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
 @keyframes tipIn { from { transform: translateY(8px); opacity: 0.2; } }
 
 /* ---------------- Right rail ---------------- */
-#rail {
-  position: fixed; right: 14px; top: 326px; z-index: 4;
-  display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
-  max-height: calc(100vh - 340px); overflow-y: auto; scrollbar-width: none;
-}
 #rail::-webkit-scrollbar { display: none; }
 .pickhead {
   font-size: 9px; letter-spacing: 1.6px; font-weight: 700; opacity: 0.65;
@@ -194,8 +189,6 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
 .tlabel { font-size: 10px; letter-spacing: 1px; opacity: 0.6; margin-top: 4px; }
 
 /* ---------------- Points of sail ---------------- */
-#posPanel { right: 70px; top: 300px; display: none; z-index: 6; padding: 12px 14px; }
-#posPanel.show { display: block; }
 .pclose { float: right; cursor: pointer; opacity: 0.7; font-size: 12px; }
 .pclose:hover { opacity: 1; }
 
@@ -273,7 +266,6 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
   .big.small { font-size: 16px; }
   #trimBar { width: 300px; }
   .tip { max-width: 320px; font-size: 12px; }
-  #rail { top: auto; bottom: 150px; }
 }
 
 /* ============================================================================
@@ -286,43 +278,6 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
 
   /* Brand wordmark is pure chrome — drop it to free the top of the screen. */
   #brand { display: none; }
-
-  /* ---- Menu button + slide-in drawer ---- */
-  #menuBtn {
-    display: flex; align-items: center; justify-content: center;
-    position: fixed; top: 10px; left: 10px; z-index: 9;
-    width: 44px; height: 44px; border-radius: 12px;
-    background: rgba(7, 21, 33, 0.82); color: #eaf3fa;
-    border: 1px solid rgba(140, 190, 230, 0.3);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    font-size: 20px; line-height: 1; cursor: pointer;
-  }
-
-  #menuBackdrop {
-    display: block; position: fixed; inset: 0; z-index: 9;
-    background: rgba(2, 8, 14, 0.5);
-    opacity: 0; pointer-events: none; transition: opacity 0.26s;
-  }
-  body.menu-open #menuBackdrop { opacity: 1; pointer-events: auto; }
-
-  /* The right rail becomes a full-height drawer sliding in from the right. */
-  #rail {
-    top: 0; right: 0; bottom: 0; left: auto;
-    width: min(320px, 84vw); height: 100vh; max-height: 100vh;
-    padding: 62px 16px 20px; gap: 10px; z-index: 10;
-    align-items: stretch; overflow-y: auto;
-    background: rgba(7, 21, 33, 0.95);
-    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-    border-left: 1px solid rgba(140, 190, 230, 0.22);
-    box-shadow: -12px 0 40px rgba(0, 6, 12, 0.45);
-    transform: translateX(100%); transition: transform 0.28s ease;
-  }
-  body.menu-open #rail { transform: translateX(0); }
-  #rail .pickhead { text-align: left; padding: 0 0 2px 2px; font-size: 10px; }
-  #rail .picker { grid-template-columns: repeat(3, 1fr); }
-  #rail .picker button, #rail .railbtn { min-height: 46px; font-size: 13px; }
-  #rail .railbtn { text-align: center; }
-  #autoTrimBtn { font-size: 11px; }
 
   /* ---- Top band: SPEED (next to the menu button) ---- */
   #instruments {
@@ -384,7 +339,7 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
   body.free-panel-collapsed #freePanelBody { display: none; }
 
   /* ---- Diagram / help overlays: centred cards ---- */
-  #posPanel, #helpPanel {
+  #helpPanel {
     top: 50%; left: 50%; right: auto;
     transform: translate(-50%, -50%);
     width: min(340px, 90vw); max-height: 82vh; overflow: auto;
@@ -594,9 +549,6 @@ body.tutorial-active #lessonPanel { max-height: calc(100dvh - 220px); overflow-y
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
-@media (min-width: 861px) {
-  #rail { padding: 4px; }
-}
 @media (max-width: 860px) and (max-height: 500px) {
   body.tutorial-active #lessonPanel { top: 70px; right: auto; width: min(340px, 48vw); max-height: calc(100dvh - 175px); }
   #rosePanel { width: 180px; }
@@ -630,6 +582,58 @@ body.exam-mode #lessonTitle { color: #805015; }
 body.exam-mode #lessonPanel { border-color: #b88b4c; }
 body.exam-mode .exampill { color: #805015; border-color: #b88b4c; }
 
-@media (min-width: 861px) and (max-width: 900px) {
-  #rail { top: 266px; bottom: auto; max-height: calc(100vh - 280px); }
+
+/* Navigation drawer on every screen size. */
+/* ---- Menu button + slide-in drawer ---- */
+#menuBtn {
+  display: flex; align-items: center; justify-content: center;
+  position: fixed; top: 10px; left: 10px; z-index: 9;
+  width: 44px; height: 44px; border-radius: 12px;
+  background: rgba(7, 21, 33, 0.82); color: #eaf3fa;
+  border: 1px solid rgba(140, 190, 230, 0.3);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  font-size: 20px; line-height: 1; cursor: pointer;
+}
+
+#menuBackdrop {
+  display: block; position: fixed; inset: 0; z-index: 9;
+  background: rgba(2, 8, 14, 0.5);
+  opacity: 0; pointer-events: none; transition: opacity 0.26s;
+}
+body.menu-open #menuBackdrop { opacity: 1; pointer-events: auto; }
+
+/* Navigation slides in beside the hamburger button on the left. */
+#rail {
+  position: fixed; display: flex; flex-direction: column;
+  top: 0; right: auto; bottom: 0; left: 0;
+  width: min(320px, 84vw); height: 100dvh; max-height: 100dvh;
+  padding: 62px 16px 20px; gap: 10px; z-index: 10;
+  align-items: stretch; overflow-y: auto;
+  background: rgba(7, 21, 33, 0.95);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid rgba(140, 190, 230, 0.22);
+  box-shadow: 12px 0 40px rgba(0, 6, 12, 0.45);
+  transform: translateX(-100%); transition: transform 0.28s ease;
+}
+body.menu-open #rail { transform: translateX(0); }
+#rail .pickhead { text-align: left; padding: 0 0 2px 2px; font-size: 10px; }
+#rail .picker { grid-template-columns: repeat(3, 1fr); }
+#rail .picker button, #rail .railbtn { min-height: 46px; font-size: 13px; }
+#rail .railbtn { text-align: center; }
+#autoTrimBtn { font-size: 11px; }
+
+
+#menuBtn { z-index: 11; }
+#rail .track-switch { min-height: 44px; }
+#quickControls {
+  position: fixed; right: 14px; top: 300px; z-index: 4;
+  display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+}
+@media (min-width: 861px) { #lessonPanel { top: 70px; } }
+@media (max-width: 860px) {
+  #quickControls { left: 10px; right: auto; top: 66px; gap: 5px; }
+  #quickControls .railbtn { min-height: 40px; }
+}
+@media (max-width: 860px) and (max-height: 500px) {
+  #quickControls { top: 10px; left: 145px; flex-direction: row; }
 }
