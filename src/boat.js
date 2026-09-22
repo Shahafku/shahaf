@@ -500,7 +500,7 @@ export class BoatView {
   }
 
   // --------------------------------------------------------------- Update
-  update(dt, boat, wind, envTime) {
+  update(dt, boat, wind, envTime, { wake = true } = {}) {
     this.time += dt;
     const t = this.time;
 
@@ -570,12 +570,13 @@ export class BoatView {
     this._updateTelltales(boat, t);
 
     // Wake spawning ∝ speed
-    this._wakeAccum += dt * Math.min(28, Math.abs(boat.speed) * 9);
+    if (wake) this._wakeAccum += dt * Math.min(28, Math.abs(boat.speed) * 9);
+    else this._wakeAccum = 0;
     const stern = {
       x: boat.pos.x - f.x * 4.6,
       z: boat.pos.z - f.z * 4.6,
     };
-    while (this._wakeAccum > 1) {
+    while (wake && this._wakeAccum > 1) {
       this._wakeAccum -= 1;
       this._spawnWake(stern.x, stern.z, 1.6);
     }

@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import { SailingFlow } from '../src/onboarding.js';
 import { byId } from '../src/curriculum.js';
 
-test('entering Lesson 1 starts sailing directly with its contextual tutorial', () => {
+test('entering Lesson 1 after theory starts sailing with its contextual tutorial', () => {
   const item = byId('course');
   let started, sailing = false;
   const flow = {
     lessons: { isUnlocked: () => true },
+    theorySeen: true,
     saveTrack() {},
     start(value) { started = value; },
     sail() { sailing = true; },

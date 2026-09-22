@@ -13,6 +13,7 @@ import { TrafficBoat } from './traffic.js';
 import { WindStreaks } from './ocean.js';
 import { storage } from './storage.js';
 import { SailingFlow } from './onboarding.js';
+import { TheoryDemo } from './theory-demo.js';
 
 // ------------------------------------------------------------------ Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -45,6 +46,7 @@ const hud = new HUD();
 const lessons = new LessonManager(scene, hud, view, worldEnvironment);
 const traffic = new TrafficBoat(scene);
 const streaks = new WindStreaks(scene);
+const theoryDemo = new TheoryDemo({ view, env, coast, streaks, camera });
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -381,8 +383,15 @@ flow = new SailingFlow(lessons, (item) => {
 }, (state) => {
   clearInput();
   setMenu(false);
+  if (state !== 'theory') theoryDemo.stop();
   if (audio) audio.master.gain.setTargetAtTime(state === 'sailing' && audioOn ? 1 : 0, audio.ctx.currentTime, 0.2);
-}, () => ({ touch: matchMedia('(pointer: coarse)').matches, helm: helmMode }));
+}, () => ({ touch: matchMedia('(pointer: coarse)').matches, helm: helmMode }),
+  (stage) => {
+    for (const buoy of lessons.buoys) buoy.visible = false;
+    if (lessons.mobCtl?.ring) lessons.mobCtl.ring.visible = false;
+    traffic.setActive(false, wind);
+    theoryDemo.setStage(stage);
+  });
 document.getElementById('guidanceToggle').addEventListener('click', () => {
   lessons.guidanceHidden = !lessons.guidanceHidden;
   lessons.renderTutorial(boat);
@@ -390,7 +399,7 @@ document.getElementById('guidanceToggle').addEventListener('click', () => {
 
 // Debug/console handle (also used by automated tests)
 window.__sail = {
-  boat, wind, lessons, LESSONS, TESTS, ALL, byId, view, traffic, flow, env, coast, streaks, scene,
+  boat, wind, lessons, LESSONS, TESTS, ALL, byId, view, traffic, flow, env, coast, streaks, scene, theoryDemo,
   select: (id) => selectItem(byId(id)),
   mob: () => lessons.mobCtl,
 };
@@ -406,6 +415,12 @@ function frame(now) {
   requestAnimationFrame(frame);
   let dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+
+  if (flow.state === 'theory' && !document.hidden) {
+    theoryDemo.update(dt, matchMedia('(prefers-reduced-motion: reduce)').matches);
+    renderer.render(scene, camera);
+    return;
+  }
 
   if (!canSail() || document.hidden) {
     renderer.render(scene, camera);

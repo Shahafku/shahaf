@@ -1,15 +1,17 @@
 // Application entry and track navigation. Sailing objectives stay in LessonManager.
 import { storage } from './storage.js';
 import { byId } from './curriculum.js';
+import { THEORY_STAGES } from './theory.js';
 const PREF_KEY = 'sail.onboarding.v1';
 const $ = (id) => document.getElementById(id);
 
 export class SailingFlow {
-  constructor(lessons, start, onStateChange, controls) {
+  constructor(lessons, start, onStateChange, controls, onTheoryStage = () => {}) {
     this.lessons = lessons;
     this.start = start;
     this.onStateChange = onStateChange;
     this.controls = controls;
+    this.onTheoryStage = onTheoryStage;
     this.overlay = $('introOverlay');
     this.content = $('introContent');
     this.track = 'learn';
@@ -18,16 +20,22 @@ export class SailingFlow {
     try { pref = JSON.parse(storage.getItem(PREF_KEY)); } catch { /* show welcome */ }
     this.hasPreference = pref?.version === 1 && ['learn', 'exam'].includes(pref.track);
     if (this.hasPreference) this.track = pref.track;
+    // Existing preferences predate theory, so returning sailors remain where
+    // they were. New preferences explicitly store unfinished theory as false.
+    this.theorySeen = this.hasPreference ? pref.theorySeen !== false : this.lessons.progress.size > 0;
+    this.forceTheory = false;
+    this.pendingTheoryItem = null;
+    this.theoryStage = 0;
 
     $('learnTrack').addEventListener('click', () => this.switchTrack('learn'));
     $('examTrack').addEventListener('click', () => this.switchTrack('exam'));
-    $('replayIntroBtn').addEventListener('click', () => this.welcome());
+    $('replayIntroBtn').addEventListener('click', () => this.welcome(true));
     // Modal focus stays within the active screen, including result dialogs.
     document.addEventListener('keydown', (event) => {
       if (this.state === 'sailing' || event.key !== 'Tab') return;
       const dialog = this.state === 'result'
         ? $(this.lessons.failed ? 'failOverlay' : 'completeOverlay') : this.overlay;
-      const buttons = [...dialog.querySelectorAll('button')].filter((el) => !el.hidden && el.style.display !== 'none');
+      const buttons = [...dialog.querySelectorAll('button')].filter((el) => !el.hidden && !el.disabled && el.style.display !== 'none');
       const first = buttons[0], last = buttons[buttons.length - 1];
       if (!first) return;
       if (event.shiftKey && (document.activeElement === first || !buttons.includes(document.activeElement))) {
@@ -59,12 +67,13 @@ export class SailingFlow {
   }
 
   saveTrack() {
-    storage.setItem(PREF_KEY, JSON.stringify({ version: 1, track: this.track }));
+    storage.setItem(PREF_KEY, JSON.stringify({ version: 1, track: this.track, theorySeen: this.theorySeen }));
     $('learnTrack').setAttribute('aria-pressed', String(this.track === 'learn'));
     $('examTrack').setAttribute('aria-pressed', String(this.track === 'exam'));
   }
 
-  welcome() {
+  welcome(replay = false) {
+    this.forceTheory = replay;
     this.screen('welcome', `
       <div class="welcome-main">
         <h1 id="introTitle" tabindex="-1">Learn to sail</h1>
@@ -99,9 +108,10 @@ export class SailingFlow {
       </ol>` : learn ? '<p>Your saved progress is ready when you are.</p>' : `<ul class="intro-exam-details"><li>Pass each test to unlock the next.</li><li>Get a clear pass or fail result.</li><li>Retry anytime, or switch to guided lessons.</li></ul>`}
       <button id="setSailBtn" class="primary intro-cta">${learn ? 'Start sailing' : 'Start testing'} <span aria-hidden="true">→</span></button>
       <p class="intro-footnote">${learn ? 'We’ll explain the controls in the simulator.' : 'Your test starts when you’re ready.'}</p>`);
-    $('introBack').addEventListener('click', () => this.welcome());
+    $('introBack').addEventListener('click', () => this.welcome(this.forceTheory));
     $('setSailBtn').addEventListener('click', () => {
       this.track = this.pendingTrack;
+      if (this.track === 'exam') this.forceTheory = false;
       this.hasPreference = true;
       this.saveTrack();
       this.resume();
@@ -120,8 +130,46 @@ export class SailingFlow {
     if (!item || (!review && !this.lessons.isUnlocked(item))) return;
     if (!item.free) this.track = item.type === 'test' ? 'exam' : 'learn';
     this.saveTrack();
+    if (item.type === 'lesson' && (!this.theorySeen || this.forceTheory)) {
+      this.pendingTheoryItem = { item, review };
+      this.showTheory(0);
+      return;
+    }
     this.start(item);
     this.sail();
+  }
+
+  showTheory(index) {
+    this.theoryStage = index;
+    const stage = THEORY_STAGES[index];
+    this.screen('theory', `
+      <div class="theory-header">
+        <span class="theory-count">THEORY · ${index + 1} OF ${THEORY_STAGES.length}</span>
+        <button id="theorySkip" class="theory-skip">Skip, take me to the boat</button>
+      </div>
+      <h1 id="introTitle" tabindex="-1">${stage.title}</h1>
+      <p class="theory-lead">${stage.lead}</p>
+      <div class="theory-readout"><span id="theoryPoint">Wind and boat</span><p id="theoryCaption"></p></div>
+      <p class="theory-takeaway">${stage.takeaway}</p>
+      <div class="theory-nav">
+        ${index ? '<button id="theoryBack" class="intro-back">← Back</button>' : '<span></span>'}
+        <button id="theoryNext" class="primary">${index === THEORY_STAGES.length - 1 ? 'Take me to the boat' : 'Next'} <span aria-hidden="true">→</span></button>
+      </div>`);
+    $('theorySkip').addEventListener('click', () => this.finishTheory());
+    $('theoryBack')?.addEventListener('click', () => this.showTheory(index - 1));
+    $('theoryNext').addEventListener('click', () => index === THEORY_STAGES.length - 1
+      ? this.finishTheory() : this.showTheory(index + 1));
+    this.onTheoryStage(index);
+  }
+
+  finishTheory() {
+    const pending = this.pendingTheoryItem;
+    if (!pending) return;
+    this.pendingTheoryItem = null;
+    this.theorySeen = true;
+    this.forceTheory = false;
+    this.saveTrack();
+    this.enterItem(pending.item, { review: pending.review });
   }
 
   sail() {

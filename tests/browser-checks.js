@@ -5,20 +5,22 @@ function assert(condition, message) { if (!condition) throw new Error(message); 
 const pref = (track) => JSON.stringify({ version: 1, track });
 const progress = (done) => JSON.stringify({ done });
 let frame;
-async function fixture(values = {}, blocked = false, touch = false, compact = false) {
+async function fixture(values = {}, blocked = false, touch = false, compact = false, phone = false, reduced = false) {
   if (frame) {
     frame.contentDocument.querySelector('#app canvas')?.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
     frame.remove();
   }
   frame = document.createElement('iframe');
+  if (phone) { frame.style.width = '390px'; frame.style.height = '760px'; }
   const html = await (await fetch('../index.html')).text();
   const bootstrap = `<base href="${new URL('../', location.href)}"><script>
     const values = ${JSON.stringify(values)};
     window.fixtureValues = values;
-    if (${touch} || ${compact}) {
+    if (${touch} || ${compact} || ${reduced}) {
       const nativeMatchMedia = window.matchMedia.bind(window);
       window.matchMedia = (query) => {
         if (${touch} && query === '(pointer: coarse)') return { matches: true };
+        if (${reduced} && query === '(prefers-reduced-motion: reduce)') return { matches: true };
         if (${compact} && query === '(max-width: 860px)') return {
           matches: true, media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}
         };
@@ -40,6 +42,75 @@ async function fixture(values = {}, blocked = false, touch = false, compact = fa
   return { w, d, app, click, key };
 }
 const cases = [
+  ['first Learn visit teaches on the boat before starting Lesson 1', async () => {
+    const { app: a, d, w, click, key } = await fixture();
+    click('chooseLearn'); click('setSailBtn');
+    assert(a.flow.state === 'theory' && d.getElementById('simulator').inert, 'theory pauses simulator controls');
+    assert(a.flow.theoryStage === 0 && d.getElementById('theoryCaption').textContent.includes('wind'), 'first wind demo appears');
+    const before = JSON.stringify({ pos: a.boat.pos, sheet: a.boat.sheet, heading: a.boat.heading, ctx: a.lessons.ctx });
+    key('ArrowRight'); key('ArrowUp'); await pause(200);
+    assert(JSON.stringify({ pos: a.boat.pos, sheet: a.boat.sheet, heading: a.boat.heading, ctx: a.lessons.ctx }) === before, 'demo cannot alter the lesson boat or progress');
+    assert(a.theoryDemo.boat !== a.boat && a.theoryDemo.active, 'demo uses its own yacht state');
+    assert(a.view.wakeAge.every((life) => life === 0), 'stationary demonstration leaves no wake trail');
+    click('theoryNext'); assert(a.flow.theoryStage === 1, 'Next opens sail trim');
+    click('theoryNext'); assert(a.flow.theoryStage === 2, 'Next opens turning');
+    click('theoryBack'); assert(a.flow.theoryStage === 1, 'Back returns to sail trim');
+    click('theorySkip');
+    assert(a.flow.state === 'sailing' && a.lessons.current.id === 'course', 'Skip enters Lesson 1');
+    assert(JSON.parse(w.fixtureValues['sail.onboarding.v1']).theorySeen, 'Skip saves completion');
+  }],
+  ['first Exam bypasses theory but later Learn sees it once', async () => {
+    const { app: a, d, click } = await fixture();
+    click('chooseExam'); click('setSailBtn');
+    assert(a.flow.state === 'sailing' && a.lessons.current.id === 't-course', 'exam begins directly');
+    click('learnTrack');
+    assert(a.flow.state === 'theory' && a.flow.theoryStage === 0, 'first Learn start opens theory');
+    click('theoryNext'); click('theoryNext');
+    assert(d.getElementById('theoryNext').textContent.includes('Take me to the boat'), 'final step names the destination');
+    click('theoryNext');
+    assert(a.flow.state === 'sailing' && a.lessons.current.id === 'course', 'finish enters guided lesson');
+    click('replayIntroBtn'); click('chooseLearn'); click('setSailBtn');
+    assert(a.flow.state === 'theory', 'Replay introduction reopens theory');
+  }],
+  ['interrupted theory restarts at stage one and replay Exam bypasses it', async () => {
+    let f = await fixture();
+    f.click('chooseLearn'); f.click('setSailBtn'); f.click('theoryNext'); f.click('theoryNext');
+    assert(f.app.flow.theoryStage === 2, 'learner can reach the third stage');
+    const saved = { ...f.w.fixtureValues };
+    assert(JSON.parse(saved['sail.onboarding.v1']).theorySeen === false, 'unfinished theory remains pending');
+    f = await fixture(saved);
+    assert(f.app.flow.state === 'theory' && f.app.flow.theoryStage === 0, 'reload restarts theory at stage one');
+    f.click('theorySkip');
+    f.click('replayIntroBtn'); f.click('chooseExam'); f.click('setSailBtn');
+    assert(f.app.flow.state === 'sailing' && f.app.lessons.current.type === 'test', 'replayed Exam bypasses theory');
+  }],
+  ['Skip works on each stage and repeated replay keeps one coast scene', async () => {
+    const f = await fixture();
+    f.click('chooseLearn'); f.click('setSailBtn'); f.click('theorySkip');
+    for (const stage of [1, 2]) {
+      f.click('replayIntroBtn'); f.click('chooseLearn'); f.click('setSailBtn');
+      for (let i = 0; i < stage; i++) f.click('theoryNext');
+      assert(f.app.flow.theoryStage === stage, `replay reaches stage ${stage + 1}`);
+      f.click('theorySkip');
+      assert(f.app.flow.state === 'sailing' && f.app.lessons.current.id === 'course', `Skip from stage ${stage + 1} starts lesson`);
+      assert(f.app.coast.scene.children.filter((child) => child.userData.coastScene).length === 1, 'replay retains one coastline scene');
+    }
+  }],
+  ['phone theory keeps the boat above a scrollable card and Skip in reach', async () => {
+    const { d, w, click } = await fixture({}, false, true, false, true);
+    click('chooseLearn'); click('setSailBtn');
+    const card = d.querySelector('#introOverlay .card').getBoundingClientRect();
+    const skip = d.getElementById('theorySkip').getBoundingClientRect();
+    assert(w.innerWidth === 390 && card.top > w.innerHeight * 0.4, 'boat has space above the bottom card');
+    assert(skip.top >= card.top && skip.bottom <= w.innerHeight, 'Skip stays visible in the card');
+  }],
+  ['reduced motion holds a stable yacht pose', async () => {
+    const { app: a, click } = await fixture({}, false, false, false, false, true);
+    click('chooseLearn'); click('setSailBtn');
+    const heading = a.theoryDemo.boat.heading, viewTime = a.view.time;
+    await pause(350);
+    assert(a.theoryDemo.boat.heading === heading && a.view.time === viewTime, 'reduced-motion yacht does not turn or flutter');
+  }],
   ['welcome and lesson introduction freeze input before direct simulator entry', async () => {
     const { app: a, d, click, key } = await fixture();
     assert(a.flow.state === 'welcome' && d.getElementById('simulator').inert, 'welcome isolates simulator');
@@ -51,7 +122,7 @@ const cases = [
     const pos = JSON.stringify(a.boat.pos), context = JSON.stringify(a.lessons.ctx);
     key('ArrowUp'); key('ArrowRight'); await pause(300);
     assert(a.flow.state === 'track-introduction' && JSON.stringify(a.lessons.ctx) === context && JSON.stringify(a.boat.pos) === pos, 'lesson introduction freezes sailing');
-    click('setSailBtn'); await pause();
+    click('setSailBtn'); click('theorySkip'); await pause();
     assert(a.flow.state === 'sailing' && a.lessons.ctx.t > 0 && a.boat.sheet === 80 * Math.PI / 180, 'starts directly without leaking held intro input');
     assert(a.boat.autoTrim === false && !d.getElementById('tutorialCoach').hidden, 'starts with manual trim and visible contextual coaching');
     assert(d.getElementById('coachAction').textContent.includes('Hold ↑'), 'first control is explained inside simulator');
@@ -73,7 +144,7 @@ const cases = [
     a.lessons.ctx.t = 181; await pause();
     assert(a.lessons.failed, 'existing test time limit still fails');
     click('retakeBtn'); assert(!a.lessons.failed && a.lessons.ctx.t < 1, 'retake resets attempt');
-    a.lessons.ctx.t = 181; await pause(); click('reviewBtn');
+    a.lessons.ctx.t = 181; await pause(); click('reviewBtn'); click('theorySkip');
     assert(a.lessons.current.id === 'tack' && a.flow.track === 'learn', 'review bypasses unfinished earlier lessons');
     click('examTrack'); assert(a.lessons.current.id === 't-tack', 'switch resumes next unfinished exam');
     assert(!a.lessons.progress.has('course') && !a.lessons.progress.has('upwind'), 'review never completes skipped lessons');
@@ -130,6 +201,8 @@ const cases = [
     assert(a.boat.sheet === stopped, 'cancel releases sail input');
     click('replayIntroBtn'); assert(a.flow.state === 'welcome', 'menu can replay welcome');
     click('chooseLearn'); click('setSailBtn');
+    assert(a.flow.state === 'theory', 'replay opens the theory demo');
+    click('theorySkip');
     assert(a.boat.autoTrim === false && a.lessons.stepIdx === 0, 'replay restarts tutorial');
     a.lessons.stepIdx = 1; a.lessons.renderTutorial(a.boat);
     assert(d.getElementById('coachHelm').textContent.includes('Wheel: turn right'), 'simulator guidance reflects saved helm');
@@ -144,7 +217,7 @@ const cases = [
   }],
   ['coast, sea and wind cues follow activities and Free Sail controls', async () => {
     const { app: a, d, w, click } = await fixture();
-    click('chooseLearn'); click('setSailBtn');
+    click('chooseLearn'); click('setSailBtn'); click('theorySkip');
     assert(a.coast.locationId === 'tel-aviv', 'Lesson 1 loads Tel Aviv');
     assert(!a.scene.children.some((child) => child.name === 'True wind source teaching cue'), 'lesson has no teaching arrow');
     assert(a.streaks.count === 138, 'lesson shows denser wind streaks');
@@ -174,7 +247,7 @@ const cases = [
   }],
   ['compact Free Sail settings open on demand', async () => {
     const { app: a, d, click } = await fixture({}, false, false, true);
-    click('chooseLearn'); click('setSailBtn');
+    click('chooseLearn'); click('setSailBtn'); click('theorySkip');
     a.flow.enterItem(a.byId('free'));
     assert(d.body.classList.contains('free-panel-collapsed'), 'compact layout starts with settings collapsed');
     assert(d.getElementById('freePanelToggle').getAttribute('aria-expanded') === 'false', 'collapsed state is exposed');
@@ -191,7 +264,7 @@ const cases = [
     assert(d.activeElement === back, 'Tab wraps to first modal button');
     back.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Tab', code: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
     assert(d.activeElement === sail, 'Shift-Tab wraps to last modal button');
-    click('setSailBtn');
+    click('setSailBtn'); click('theorySkip');
     assert(d.getElementById('coachAction').textContent.includes('Hold sail-in'), 'coach uses touch instructions');
     a.lessons._fail('Fixture result'); a.flow.showResult();
     const time = a.lessons.ctx.t, pos = JSON.stringify(a.boat.pos); await pause(250);
