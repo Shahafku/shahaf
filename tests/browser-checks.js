@@ -45,14 +45,25 @@ const cases = [
   ['Lesson 2 coaches the buoy attempt and each upwind diagonal', async () => {
     const { app: a, d } = await fixture({ 'sail.onboarding.v1': pref('learn'), 'sail.progress.v2': progress(['course']) });
     assert(a.lessons.current.id === 'upwind' && d.getElementById('coachTitle').textContent === 'Aim at the buoy', 'Lesson 2 starts with the upwind buoy');
+    const coachRect = d.getElementById('lessonPanel').getBoundingClientRect();
+    const instrumentRect = d.getElementById('instruments').getBoundingClientRect();
+    assert(coachRect.bottom <= instrumentRect.top || instrumentRect.bottom <= coachRect.top, 'coach card does not overlap the instruments');
+    assert(d.querySelectorAll('#coachSteps li').length === 5 && d.querySelector('#coachSteps [aria-current="step"]').textContent === '1', 'five-step strip shows the current phase');
+    assert(d.getElementById('coachGoal').textContent.includes('direct route') && d.getElementById('coachSail').textContent.includes('sail'), 'first phase explains its goal and sail observation');
     const b = a.boat, m = a.lessons, wind = a.wind;
     b.heading = 0; b.twa = 0;
     m.update(2.6, b, wind, 0);
     assert(m.stepIdx === 1 && d.getElementById('coachAction').textContent.includes('no-go zone'), 'no-go discovery explains why the direct course fails');
+    assert(d.querySelector('#coachSteps [aria-current="step"]').textContent === '2' && !d.getElementById('coachAdvance').hidden && d.getElementById('coachAdvance').textContent.includes('Aim at the buoy'), 'step transition visibly marks the completed step and next phase');
     b.inIrons = true; m.renderTutorial(b);
     assert(d.getElementById('coachRecovery').textContent.includes('no-go zone'), 'stalled recovery still explains the no-go zone');
+    assert(!d.getElementById('coachAction').hidden && !d.getElementById('coachSailRow').hidden, 'steering and sail instructions remain visible during recovery');
     b.inIrons = false;
     b.heading = 45 * Math.PI / 180; b.twa = -45 * Math.PI / 180; b.speed = 2.1;
+    b.sheet = 55 * Math.PI / 180; b.bestSheet = 12 * Math.PI / 180; b.luffing = true;
+    m.renderTutorial(b);
+    assert(d.getElementById('coachSail').textContent.includes('too loose'), 'coach responds to a loose upwind sail');
+    b.luffing = false;
     m.update(0.01, b, wind, 0);
     assert(m.stepIdx === 2 && d.getElementById('coachTitle').textContent === 'Sail the first diagonal', 'coach names the first close-hauled leg');
     b.pos.z += 72;
@@ -64,6 +75,19 @@ const cases = [
     b.pos.x = 90;
     m.update(0.01, b, wind, 0);
     assert(d.getElementById('coachAction').textContent.includes('west'), 'coach names the side of the buoy for the next tack');
+  }],
+  ['Lesson 2 phone coach shows steering and sail guidance together', async () => {
+    const { app: a, d, w } = await fixture({ 'sail.onboarding.v1': pref('learn'), 'sail.progress.v2': progress(['course']) }, false, true, false, true);
+    const panel = d.getElementById('lessonPanel').getBoundingClientRect();
+    const sail = d.getElementById('coachSailRow').getBoundingClientRect();
+    assert(w.innerWidth === 390 && panel.bottom < w.innerHeight - 150, 'phone guidance leaves the helm and sail controls reachable');
+    assert(sail.top < panel.bottom && !d.getElementById('coachSailRow').hidden, 'sail guidance begins within the visible phone card');
+    const panelNode = d.getElementById('lessonPanel');
+    panelNode.scrollTop = panelNode.scrollHeight;
+    assert(panelNode.scrollTop > 0, 'phone guidance scrolls when needed');
+    a.boat.heading = 0; a.boat.twa = 0;
+    a.lessons.update(2.6, a.boat, a.wind, 0);
+    assert(panelNode.scrollTop === 0 && !d.getElementById('coachAdvance').hidden, 'new step brings its notice back into view');
   }],
   ['theory circle follows the yacht and pause and step hold each position', async () => {
     const { app: a, d, click } = await fixture();

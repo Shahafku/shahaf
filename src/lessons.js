@@ -132,7 +132,7 @@ export class LessonManager {
   renderTutorial(boat) {
     const L = this.current;
     this.hud.setTutorial(L.tutorial && !this.completed ? {
-      tutorial: L.tutorial, step: L.steps[this.stepIdx], index: this.stepIdx,
+      tutorial: L.tutorial, steps: L.steps, step: L.steps[this.stepIdx], index: this.stepIdx,
       count: L.steps.length, hidden: this.guidanceHidden, ctx: this.ctx, boat,
     } : null);
   }

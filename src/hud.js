@@ -43,13 +43,41 @@ export class HUD {
     document.body.classList.toggle('tutorial-active', !!state);
     $('tutorialCoach').hidden = !state;
     document.querySelectorAll('.tutorial-highlight').forEach((el) => el.classList.remove('tutorial-highlight'));
-    if (!state) return;
+    if (!state) {
+      clearTimeout(this._coachAdvanceTimer);
+      this._coachTutorial = null;
+      this._coachIndex = null;
+      $('coachAdvance').hidden = true;
+      return;
+    }
     this.tipEl.innerHTML = '';
     this._tipKey = '';
-    const { tutorial, step, index, count, hidden, ctx, boat } = state;
+    const { tutorial, steps, step, index, count, hidden, ctx, boat } = state;
     const touch = matchMedia('(pointer: coarse)').matches;
     const helm = this.helmMode || 'tiller';
     $('coachCount').textContent = `STEP ${index + 1} OF ${count}`;
+    if (tutorial !== this._coachTutorial || index !== this._coachIndex) {
+      const previousIndex = tutorial === this._coachTutorial ? this._coachIndex : null;
+      const strip = $('coachSteps');
+      strip.replaceChildren(...steps.map((item, i) => {
+        const node = document.createElement('li');
+        node.textContent = String(i + 1);
+        node.setAttribute('aria-label', `Step ${i + 1}: ${item.title}`);
+        if (i === index) node.setAttribute('aria-current', 'step');
+        if (i < index) node.classList.add('done');
+        return node;
+      }));
+      const advance = $('coachAdvance');
+      clearTimeout(this._coachAdvanceTimer);
+      if (previousIndex !== null && previousIndex < index) {
+        advance.textContent = `✓ ${steps[previousIndex].title} complete · Next: ${step.title}`;
+        advance.hidden = false;
+        $('lessonPanel').scrollTop = 0;
+        this._coachAdvanceTimer = setTimeout(() => { advance.hidden = true; }, 4000);
+      } else advance.hidden = true;
+      this._coachTutorial = tutorial;
+      this._coachIndex = index;
+    }
     $('guidanceToggle').textContent = hidden ? 'Show guidance' : 'Hide guidance';
     $('guidanceToggle').setAttribute('aria-expanded', String(!hidden));
     $('coachBody').hidden = hidden;
@@ -57,9 +85,14 @@ export class HUD {
     for (const id of step.highlights || []) $(id)?.classList.add('tutorial-highlight');
     // Do not repeatedly replace the live heading while the same step is active.
     if ($('coachTitle').textContent !== step.title) $('coachTitle').textContent = step.title;
+    $('coachGoal').hidden = !step.goal;
+    $('coachGoal').textContent = step.goal || '';
     const action = step[touch ? 'touch' : 'keyboard'];
     $('coachAction').textContent = typeof action === 'function' ? action(boat, ctx) : action;
     $('coachHelm').textContent = step.controls === 'helm' ? tutorial[helm] : '';
+    const sail = step.sail;
+    $('coachSailRow').hidden = !sail;
+    $('coachSail').textContent = typeof sail === 'function' ? sail(boat, touch) : sail || '';
     const progress = $('coachProgress');
     progress.hidden = ['distance', 'tack'].includes(step.progress);
     if (step.progress === 'course') {
@@ -85,7 +118,9 @@ export class HUD {
     const recovery = boat.inIrons ? tutorial.recovery.irons
       : boat.stalled ? tutorial.recovery.stall
       : boat.luffing && index > 0 ? tutorial.recovery.luff : '';
-    $('coachAction').hidden = !!recovery;
+    const hideAction = !!recovery && !sail;
+    $('coachAction').hidden = hideAction;
+    $('coachSteerLabel').hidden = !sail || hideAction;
     if ($('coachRecovery').textContent !== recovery) $('coachRecovery').textContent = recovery;
   }
 
