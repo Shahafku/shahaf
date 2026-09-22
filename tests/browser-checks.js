@@ -42,6 +42,33 @@ async function fixture(values = {}, blocked = false, touch = false, compact = fa
   return { w, d, app, click, key };
 }
 const cases = [
+  ...[false, true].map((touch) => [`Lesson 3 four-step coach (${touch ? 'phone' : 'keyboard'})`, async () => {
+    const { app: a, d, click, w } = await fixture({ 'sail.onboarding.v1': pref('learn'), 'sail.progress.v2': progress(['course', 'upwind']) }, false, touch, false, touch);
+    const m = a.lessons, b = a.boat, tick = () => m.update(0.01, b, a.wind, 0);
+    assert(m.current.id === 'tack' && !d.getElementById('tutorialCoach').hidden, 'Lesson 3 shows coaching');
+    assert(d.querySelectorAll('#coachSteps li').length === 4, 'four numbered steps');
+    assert(d.getElementById('coachAction').textContent.includes(touch ? 'helm taps' : '← / →'), 'device-appropriate controls');
+    assert(d.getElementById('coachProgressText').textContent.includes('4.5 kn'), 'speed target matches objective');
+    assert(d.getElementById('btnIn').classList.contains('tutorial-highlight'), 'sail control is highlighted');
+    click('guidanceToggle'); assert(d.getElementById('coachBody').hidden, 'guidance can hide');
+    click('guidanceToggle'); assert(!d.getElementById('coachBody').hidden, 'guidance can return');
+    if (touch) {
+      const panel = d.getElementById('lessonPanel').getBoundingClientRect();
+      assert(panel.bottom < w.innerHeight - 150, 'phone card leaves controls reachable');
+    }
+    b.twa = -45 * Math.PI / 180; b.speed = 2.4; tick();
+    assert(m.stepIdx === 1 && d.getElementById('coachTitle').textContent === 'Turn through the wind', 'fresh tack prompt appears');
+    b.twa = 5 * Math.PI / 180; b.speed = 1.1; tick();
+    assert(m.stepIdx === 2 && d.getElementById('coachTitle').textContent === 'Steady, trim and accelerate', 'crossing starts recovery step');
+    b.inIrons = true; m.renderTutorial(b);
+    assert(d.getElementById('coachRecovery').textContent.includes('Head-to-wind'), 'recovery coaching appears');
+    b.inIrons = false; b.twa = 45 * Math.PI / 180; b.speed = 2.4; b.efficiency = 0.8; tick();
+    assert(m.stepIdx === 3 && d.getElementById('coachTitle').textContent === 'Sail the rings in order', 'ready for rings after acceleration');
+    assert(d.querySelectorAll('#coachSteps li.done').length === 3, 'completed phases marked');
+    for (const mark of m.current.marks) { b.pos.x = mark.x; b.pos.z = mark.z; tick(); }
+    assert(m.completed && d.getElementById('tutorialCoach').hidden, 'rings complete and clear coach');
+  }]),
+
   ['Lesson 2 coaches the buoy attempt and each upwind diagonal', async () => {
     const { app: a, d } = await fixture({ 'sail.onboarding.v1': pref('learn'), 'sail.progress.v2': progress(['course']) });
     assert(a.lessons.current.id === 'upwind' && d.getElementById('coachTitle').textContent === 'Aim at the buoy', 'Lesson 2 starts with the upwind buoy');
