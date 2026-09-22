@@ -42,6 +42,28 @@ async function fixture(values = {}, blocked = false, touch = false, compact = fa
   return { w, d, app, click, key };
 }
 const cases = [
+  ['theory circle follows the yacht and pause and step hold each position', async () => {
+    const { app: a, d, click } = await fixture();
+    click('chooseLearn'); click('setSailBtn');
+    const marker = d.getElementById('theoryBoatMarker');
+    assert(marker && d.querySelector('[data-theory-point="In Irons — No-Go Zone"].current'), 'circle begins at no-go');
+    assert(marker.getAttribute('transform').includes('translate(90 25)'), 'head-to-wind marker sits at the top of the circle');
+    click('theoryPause');
+    const held = marker.getAttribute('transform'), time = a.theoryDemo.elapsed;
+    await pause(300);
+    assert(a.theoryDemo.elapsed === time && marker.getAttribute('transform') === held, 'Pause freezes boat and diagram together');
+    click('theoryStep');
+    assert(Math.round(a.theoryDemo.boat.heading * 180 / Math.PI) === 45, 'step moves to close-hauled');
+    assert(marker.getAttribute('transform').includes('translate(136 44)'), '45-degree marker follows the boat around the circle');
+    assert(marker.getAttribute('transform') !== held && d.querySelector('[data-theory-point="Close-Hauled"].current'), 'circle highlights the new position');
+    click('theoryPause');
+    await pause(200);
+    assert(a.theoryDemo.elapsed > 4, 'Play resumes the loop');
+    click('theoryNext');
+    assert(d.getElementById('theoryBoatMarker') && d.querySelector('[data-theory-point="Close-Hauled"].current'), 'stage two starts with the same live circle');
+    click('theoryStep');
+    assert(Math.round(a.theoryDemo.boat.heading * 180 / Math.PI) === 90 && d.querySelector('[data-theory-point="Beam Reach"].current'), 'stage two advances chart and sail together');
+  }],
   ['first Learn visit teaches on the boat before starting Lesson 1', async () => {
     const { app: a, d, w, click, key } = await fixture();
     click('chooseLearn'); click('setSailBtn');
@@ -97,12 +119,16 @@ const cases = [
     }
   }],
   ['phone theory keeps the boat above a scrollable card and Skip in reach', async () => {
-    const { d, w, click } = await fixture({}, false, true, false, true);
+    const { app: a, d, w, click } = await fixture({}, false, true, false, true);
     click('chooseLearn'); click('setSailBtn');
     const card = d.querySelector('#introOverlay .card').getBoundingClientRect();
     const skip = d.getElementById('theorySkip').getBoundingClientRect();
     assert(w.innerWidth === 390 && card.top > w.innerHeight * 0.4, 'boat has space above the bottom card');
     assert(skip.top >= card.top && skip.bottom <= w.innerHeight, 'Skip stays visible in the card');
+    a.theoryDemo.camera.updateMatrixWorld();
+    const hull = a.theoryDemo.camera.position.clone().set(0, 0, 0).project(a.theoryDemo.camera);
+    const hullScreenY = (1 - hull.y) * w.innerHeight / 2;
+    assert(hullScreenY < card.top - 6, `the yacht hull remains visible above the phone card (hull ${hullScreenY.toFixed(1)}, card ${card.top.toFixed(1)})`);
   }],
   ['reduced motion holds a stable yacht pose', async () => {
     const { app: a, click } = await fixture({}, false, false, false, false, true);

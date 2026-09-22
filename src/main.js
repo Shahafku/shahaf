@@ -391,6 +391,7 @@ flow = new SailingFlow(lessons, (item) => {
     if (lessons.mobCtl?.ring) lessons.mobCtl.ring.visible = false;
     traffic.setActive(false, wind);
     theoryDemo.setStage(stage);
+    return theoryDemo;
   });
 document.getElementById('guidanceToggle').addEventListener('click', () => {
   lessons.guidanceHidden = !lessons.guidanceHidden;
