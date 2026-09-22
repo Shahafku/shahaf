@@ -52,6 +52,7 @@ export class SailingFlow {
   setState(state) {
     this.state = state;
     document.body.dataset.flow = state;
+    if (state !== 'track-introduction') this.overlay.classList.remove('journey-active');
     const modal = !['sailing', 'result'].includes(state);
     this.overlay.hidden = !modal;
     $('simulator').inert = state !== 'sailing';
@@ -92,24 +93,38 @@ export class SailingFlow {
     $('chooseExam').addEventListener('click', () => this.introduce('exam'));
   }
 
-  introduce(track) {
+  introduce(track, { fromTrackSwitch = false } = {}) {
     this.pendingTrack = track;
     const learn = track === 'learn';
-    const next = this.lessons.resumeTarget(track);
-    const firstLesson = learn && next?.tutorial;
+    const showJourney = learn && (!this.theorySeen || this.forceTheory);
+    const previousState = this.state;
     this.screen('track-introduction', `
+      <div class="${showJourney ? 'journey-page' : ''}">
       <button id="introBack" class="intro-back">← Back</button>
-      <p class="intro-meta">${firstLesson ? 'Learn to sail · Lesson 1 of 7' : learn ? 'Learn to sail' : 'Test your skills · 6 practical tests'}</p>
-      <h1 id="introTitle" tabindex="-1">${firstLesson ? 'Feel the wind' : learn ? 'Keep learning' : 'Put your skills to the test'}</h1>
-      <p class="intro-lead">${firstLesson ? 'Start with a simple course. We’ll guide you through each step.' : learn ? 'Continue your guided lessons and build confidence at the helm.' : 'Sail independently, with clear goals and no coaching.'}</p>
-      ${firstLesson ? `<ol class="intro-objectives">
-        <li><strong>Fill the sail</strong><p>Adjust the sail until it catches the wind.</p></li>
-        <li><strong>Hold your course</strong><p>Stay on course for 15 seconds.</p></li>
-        <li><strong>Reach the ring</strong><p>Steer through the ring to finish.</p></li>
-      </ol>` : learn ? '<p>Your saved progress is ready when you are.</p>' : `<ul class="intro-exam-details"><li>Pass each test to unlock the next.</li><li>Get a clear pass or fail result.</li><li>Retry anytime, or switch to guided lessons.</li></ul>`}
-      <button id="setSailBtn" class="primary intro-cta">${learn ? 'Start sailing' : 'Start testing'} <span aria-hidden="true">→</span></button>
-      <p class="intro-footnote">${learn ? 'We’ll explain the controls in the simulator.' : 'Your test starts when you’re ready.'}</p>`);
-    $('introBack').addEventListener('click', () => this.welcome(this.forceTheory));
+      <p class="intro-meta">${learn ? 'Learn to sail' : 'Test your skills · 6 practical tests'}</p>
+      <h1 id="introTitle" tabindex="-1">${showJourney ? 'Your sailing journey' : learn ? 'Keep learning' : 'Put your skills to the test'}</h1>
+      <p class="intro-lead">${showJourney ? 'Before we hop on the boat, let’s learn the basics.' : learn ? 'Continue your guided lessons and build confidence at the helm.' : 'Sail independently, with clear goals and no coaching.'}</p>
+      ${showJourney ? `<div class="journey-map">
+        <svg class="journey-route" viewBox="0 0 140 320" preserveAspectRatio="none" aria-hidden="true">
+          <path class="journey-course" d="M 26 8 C 6 70 112 82 108 146 S 22 222 104 304" />
+          <path class="journey-boat" d="M 49 63 L 49 45 L 59 62 Z M 51 67 L 65 67 L 61 71 L 54 71 Z" />
+          <path class="journey-finish" d="M 104 304 L 104 283 M 104 284 L 116 287 L 104 291" />
+        </svg>
+        <ol class="journey-stops">
+          <li><strong>Learn the basics</strong><p>Explore how wind, course, and sail trim work.</p></li>
+          <li><strong>Take the helm</strong><p>Practice aboard the boat with step-by-step guidance in each lesson.</p></li>
+          <li><strong>Test your skills</strong><p>When you feel ready, try the six practical tests.</p></li>
+        </ol>
+      </div>` : learn ? '<p>Your saved progress is ready when you are.</p>' : `<ul class="intro-exam-details"><li>Pass each test to unlock the next.</li><li>Get a clear pass or fail result.</li><li>Retry anytime, or switch to guided lessons.</li></ul>`}
+      <button id="setSailBtn" class="primary intro-cta">${showJourney ? 'Start the tutorials' : learn ? 'Start sailing' : 'Start testing'} <span aria-hidden="true">→</span></button>
+      ${showJourney ? '' : `<p class="intro-footnote">${learn ? 'We’ll explain the controls in the simulator.' : 'Your test starts when you’re ready.'}</p>`}
+      </div>`);
+    this.overlay.classList.toggle('journey-active', showJourney);
+    $('introBack').addEventListener('click', () => {
+      if (!fromTrackSwitch) this.welcome(this.forceTheory);
+      else if (previousState === 'result') this.showResult();
+      else this.sail();
+    });
     $('setSailBtn').addEventListener('click', () => {
       this.track = this.pendingTrack;
       if (this.track === 'exam') this.forceTheory = false;
@@ -119,7 +134,15 @@ export class SailingFlow {
     });
   }
 
-  switchTrack(track) { this.track = track; this.saveTrack(); this.resume(); }
+  switchTrack(track) {
+    if (track === 'learn' && !this.theorySeen) {
+      this.introduce(track, { fromTrackSwitch: true });
+      return;
+    }
+    this.track = track;
+    this.saveTrack();
+    this.resume();
+  }
 
   resume() {
     const next = this.lessons.resumeTarget(this.track);
