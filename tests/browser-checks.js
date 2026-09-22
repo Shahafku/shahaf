@@ -132,7 +132,7 @@ const cases = [
     assert(marker.getAttribute('transform').includes('translate(136 44)'), '45-degree marker follows the boat around the circle');
     assert(marker.getAttribute('transform') !== held && d.querySelector('[data-theory-point="Close-Hauled"].current'), 'circle highlights the new position');
     click('theoryPause');
-    await pause(200);
+    for (let i = 0; i < 20 && a.theoryDemo.elapsed <= 4; i++) await pause(100);
     assert(a.theoryDemo.elapsed > 4, 'Play resumes the loop');
     click('theoryNext');
     assert(d.getElementById('introTitle').textContent === 'How far out should the sail be?' && d.querySelector('.theory-focus').textContent.includes('SAIL'), 'stage two shifts attention to sail trim');
@@ -162,13 +162,28 @@ const cases = [
     click('chooseExam'); click('setSailBtn');
     assert(a.flow.state === 'sailing' && a.lessons.current.id === 't-course', 'exam begins directly');
     click('learnTrack');
-    assert(a.flow.state === 'theory' && a.flow.theoryStage === 0, 'first Learn start opens theory');
+    assert(a.flow.state === 'track-introduction' && d.getElementById('introTitle').textContent === 'Your sailing journey', 'first Learn switch opens the journey');
+    click('introBack');
+    assert(a.flow.state === 'sailing' && a.flow.track === 'exam', 'Back returns to the ongoing exam');
+    click('learnTrack'); click('setSailBtn');
+    assert(a.flow.state === 'theory' && a.flow.theoryStage === 0, 'journey starts the theory guide');
     click('theoryNext'); click('theoryNext');
     assert(d.getElementById('theoryNext').textContent.includes('Take me to the boat'), 'final step names the destination');
     click('theoryNext');
     assert(a.flow.state === 'sailing' && a.lessons.current.id === 'course', 'finish enters guided lesson');
     click('replayIntroBtn'); click('chooseLearn'); click('setSailBtn');
     assert(a.flow.state === 'theory', 'Replay introduction reopens theory');
+  }],
+  ['first Learn overview explains the full journey before theory', async () => {
+    const { app: a, d, click } = await fixture();
+    click('chooseLearn');
+    assert(a.flow.state === 'track-introduction' && d.getElementById('introTitle').textContent === 'Your sailing journey', 'overview has the course heading');
+    const text = d.querySelector('.journey-page').textContent;
+    assert(text.includes('Before we hop on the boat, let’s learn the basics.') && text.includes('Take the helm') && text.includes('Test your skills'), 'overview tells the full sequence');
+    assert(!text.includes('Lesson 1 of 7') && !text.includes('three quick visual tutorials'), 'overview avoids lesson-specific and tutorial-count copy');
+    assert(d.querySelector('.journey-route .journey-boat') && d.getElementById('setSailBtn').textContent.includes('Start the tutorials'), 'small boat route and clear action are present');
+    click('setSailBtn');
+    assert(a.flow.state === 'theory', 'action starts theory');
   }],
   ['interrupted theory restarts at stage one and replay Exam bypasses it', async () => {
     let f = await fixture();
