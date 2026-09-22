@@ -87,3 +87,23 @@ test('Lesson 1 waits for sail adjustment instead of transient startup efficiency
   }
   assert.equal(manager.stepIdx, 0);
 });
+
+test('Lesson 2 guides a no-go attempt, a close-hauled leg, a tack, then the buoy', () => {
+  const { manager, boat, wind } = setup('upwind');
+  assert.equal(manager.stepIdx, 0);
+  boat.twa = 0; boat.heading = 0;
+  manager.update(2.6, boat, wind, 0);
+  assert.equal(manager.stepIdx, 1);
+  boat.twa = -45 * DEG; boat.heading = 45 * DEG; boat.speed = 2.1;
+  manager.update(0.1, boat, wind, 0);
+  assert.equal(manager.stepIdx, 2);
+  boat.pos.z += 72;
+  manager.update(0.1, boat, wind, 0);
+  assert.equal(manager.stepIdx, 3);
+  manager.ctx.tacked = true; boat.twa = 45 * DEG; boat.heading = -45 * DEG;
+  manager.update(0.1, boat, wind, 0);
+  assert.equal(manager.stepIdx, 4);
+  boat.pos.z = 300; boat.pos.x = 0;
+  manager.update(0.1, boat, wind, 0);
+  assert.equal(manager.completed, true);
+});

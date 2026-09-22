@@ -23,6 +23,16 @@ const mobFail = (b, ctx) => {
   return null;
 };
 
+function finalUpwindGuidance(boat, ctx, touch) {
+  const steer = touch ? 'Use the helm buttons' : 'Use ← / →';
+  if (ctx.distToMark < 40) return `${steer} to pass through the glowing ring. Keep the sail filled.`;
+  const across = -boat.pos.x;
+  if (Math.abs(across) > 45 && Math.sign(boat.heading) === (across > 0 ? 1 : -1)) {
+    return `The buoy is now ${across > 0 ? 'east' : 'west'} of you. Tack through the wind, then settle about 45° off it on the other side.`;
+  }
+  return `Keep the bow about 45° off the wind and sail this diagonal. If the buoy slips far to the other side, tack again.`;
+}
+
 export const LESSONS = [
   {
     id: 'course',
@@ -83,6 +93,15 @@ export const LESSONS = [
     type: 'lesson',
     environment: { locationId: 'haifa', seaState: 'small' },
     title: 'Lesson 2 · The No-Go Zone',
+    tutorial: {
+      wheel: 'Wheel: turn toward the side you want the bow to go.',
+      tiller: 'Tiller: move opposite the direction you want the bow to go.',
+      recovery: {
+        irons: 'You can’t sail straight upwind: this is the no-go zone. With little speed, hold the helm to one side until the bow falls about 45° off the wind, then sheet in.',
+        stall: 'The sail is too tight for this angle. Ease it a little.',
+        luff: 'The sail is flapping. Sheet in until it fills.',
+      },
+    },
     brief:
       'The buoy is <b>dead upwind</b>. Try pointing straight at it — and watch what the wind does to your sails. ' +
       'The red wedge on the wind rose marks the <b>no-go zone</b>.',
@@ -91,15 +110,39 @@ export const LESSONS = [
     marks: [{ x: 0, z: 300 }],
     steps: [
       {
-        text: 'Turn the bow straight toward the buoy (dead upwind) and see what happens…',
+        title: 'Aim at the buoy', controls: 'helm', highlights: ['btnLeft', 'btnRight', 'markInfo'], progress: 'no-go',
+        keyboard: 'The buoy is straight upwind. Use ← / → to point the bow at it. Watch your speed and sail for a moment.',
+        touch: 'The buoy is straight upwind. Use the helm buttons to point the bow at it. Watch your speed and sail for a moment.',
+        text: 'First, point the bow at the buoy and see what happens.',
         done: (b, ctx) => (ctx.timeInNoGo ?? 0) > 2.5,
       },
       {
-        text: '<b>You’re in irons!</b> Sails can’t work within ~35° of the wind. Bear away (turn ~50° off the wind), sheet in, and rebuild speed.',
-        done: (b) => b.speed > 2.0 && Math.abs(b.twa) > 33 * DEG && Math.abs(b.twa) < 75 * DEG,
+        title: 'Leave the no-go zone', controls: 'helm', highlights: ['btnLeft', 'btnRight', 'trimBar'], progress: 'speed',
+        keyboard: 'You can’t sail straight upwind: you’re in the no-go zone. Steer about 45° to either side of the wind, then hold ↑ to sheet in.',
+        touch: 'You can’t sail straight upwind: you’re in the no-go zone. Steer about 45° to either side of the wind, then hold sail-in (−).',
+        text: 'You can’t sail straight upwind: you’re in the no-go zone. Turn about 45° away, sheet in, and let the sail fill.',
+        done: (b) => b.speed > 1.8 && Math.abs(b.twa) >= 35 * DEG && Math.abs(b.twa) <= 65 * DEG,
       },
       {
-        text: 'This angle is <b>close-hauled</b> — as close to the wind as a yacht can sail. Zigzag upwind: hold this angle, and turn through the wind (<b>tack</b>) when the buoy is far to one side.',
+        title: 'Sail the first diagonal', controls: 'helm', highlights: ['btnLeft', 'btnRight', 'markInfo'], progress: 'upwind-leg',
+        keyboard: 'You are close-hauled. Keep about 45° to the wind and sail this diagonal for 70 m, even though the buoy is off your bow.',
+        touch: 'You are close-hauled. Use small helm taps to keep about 45° to the wind for 70 m.',
+        text: 'Sail close-hauled, about 45° off the wind, to gain ground toward the buoy.',
+        onEnter: (b, ctx) => { ctx.upwindLegStartZ = b.pos.z; ctx.upwindFirstSign = Math.sign(b.twa); },
+        done: (b, ctx) => b.pos.z - ctx.upwindLegStartZ >= 70 && Math.abs(b.twa) >= 35 * DEG && Math.abs(b.twa) <= 65 * DEG,
+      },
+      {
+        title: 'Tack onto the other diagonal', controls: 'helm', highlights: ['btnLeft', 'btnRight'], progress: 'tack',
+        keyboard: 'Now turn the bow through the wind. Keep steering until the wind reaches the other side and you are about 45° off it again.',
+        touch: 'Now turn the bow through the wind. Keep steering until the wind reaches the other side and you are about 45° off it again.',
+        text: 'Turn through the wind onto the other diagonal. This turn is a tack.',
+        done: (b, ctx) => ctx.tacked && Math.sign(b.twa) === -ctx.upwindFirstSign && b.speed > 0.8 && Math.abs(b.twa) >= 35 * DEG && Math.abs(b.twa) <= 75 * DEG,
+      },
+      {
+        title: 'Zigzag to the buoy', controls: 'helm', highlights: ['btnLeft', 'btnRight', 'markInfo'], progress: 'distance',
+        keyboard: (b, ctx) => finalUpwindGuidance(b, ctx, false),
+        touch: (b, ctx) => finalUpwindGuidance(b, ctx, true),
+        text: 'Continue close-hauled. Tack again when the buoy lies far across the wind, then sail through the ring.',
         done: () => false,
       },
     ],

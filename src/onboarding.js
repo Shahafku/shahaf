@@ -149,6 +149,7 @@ export class SailingFlow {
         <button id="theorySkip" class="theory-skip">Skip, take me to the boat</button>
       </div>
       <h1 id="introTitle" tabindex="-1">${stage.title}</h1>
+      <p class="theory-focus">${stage.focus}</p>
       <p class="theory-lead">${stage.lead}</p>
       ${index < 2 ? theoryChartMarkup() : ''}
       <div class="theory-readout"><span id="theoryPoint">Wind and boat</span><p id="theoryCaption"></p></div>

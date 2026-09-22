@@ -242,6 +242,7 @@ export class LessonManager {
         ctx.tacked = false;
         ctx.gybed = false;
         if (L.tutorial) ctx.onCourseTime = 0;
+        L.steps[this.stepIdx].onEnter?.(boat, ctx);
         this._showStep();
       }
     }

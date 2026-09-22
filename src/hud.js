@@ -57,16 +57,28 @@ export class HUD {
     for (const id of step.highlights || []) $(id)?.classList.add('tutorial-highlight');
     // Do not repeatedly replace the live heading while the same step is active.
     if ($('coachTitle').textContent !== step.title) $('coachTitle').textContent = step.title;
-    $('coachAction').textContent = step[touch ? 'touch' : 'keyboard'];
+    const action = step[touch ? 'touch' : 'keyboard'];
+    $('coachAction').textContent = typeof action === 'function' ? action(boat, ctx) : action;
     $('coachHelm').textContent = step.controls === 'helm' ? tutorial[helm] : '';
     const progress = $('coachProgress');
-    progress.hidden = step.progress === 'distance';
+    progress.hidden = ['distance', 'tack'].includes(step.progress);
     if (step.progress === 'course') {
       progress.value = Math.min(1, ctx.onCourseTime / 15);
       $('coachProgressText').textContent = `${Math.min(15, ctx.onCourseTime).toFixed(1)} / 15 seconds on course`;
     } else if (step.progress === 'trim') {
       progress.value = Math.max(0, Math.min(1, boat.efficiency / 0.7, boat.speed / 1.2));
       $('coachProgressText').textContent = 'Fill the sail and build speed';
+    } else if (step.progress === 'no-go') {
+      progress.value = Math.min(1, ctx.timeInNoGo / 2.5);
+      $('coachProgressText').textContent = 'Watch the sail and speed while pointing upwind';
+    } else if (step.progress === 'speed') {
+      progress.value = Math.min(1, Math.max(0, boat.speed / 1.8));
+      $('coachProgressText').textContent = 'Build speed on a close-hauled course';
+    } else if (step.progress === 'upwind-leg') {
+      progress.value = Math.min(1, Math.max(0, (boat.pos.z - ctx.upwindLegStartZ) / 70));
+      $('coachProgressText').textContent = `${Math.max(0, Math.round(boat.pos.z - ctx.upwindLegStartZ))} / 70 m gained upwind`;
+    } else if (step.progress === 'tack') {
+      $('coachProgressText').textContent = 'Turn through the wind onto the other close-hauled course';
     } else {
       $('coachProgressText').textContent = Number.isFinite(ctx.distToMark) ? `${Math.round(ctx.distToMark)} m to the ring` : 'Destination: the glowing ring';
     }

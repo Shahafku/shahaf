@@ -460,6 +460,7 @@ body[data-flow="theory"] #introOverlay p { font-size: 15px; line-height: 1.4; }
 .theory-count { color: #62758c; font-size: 11px; font-weight: 750; letter-spacing: .1em; white-space: nowrap; }
 #introOverlay .theory-skip { border: 0; padding: 9px 0; background: transparent; color: #103660; text-decoration: underline; text-underline-offset: 3px; font-size: 12px; font-weight: 650; }
 #introOverlay .theory-lead { margin: 0 0 10px; }
+.theory-focus { margin: 0 0 4px !important; color: #317394; font-size: 11px !important; font-weight: 800; letter-spacing: .08em; }
 .theory-compass { display: grid; grid-template-columns: 174px 1fr; align-items: center; gap: 8px; margin: 0 0 10px; padding: 5px 9px 7px; background: #ecf2f6; border-radius: 9px; }
 .theory-compass-wheel { position: relative; padding-top: 12px; }
 .theory-compass-wheel svg { display: block; width: 174px; height: 174px; }

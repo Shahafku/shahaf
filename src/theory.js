@@ -4,8 +4,9 @@ import { DEG, pointOfSail } from './physics.js';
 
 export const THEORY_STAGES = Object.freeze([
   {
-    title: 'Find your angle',
-    lead: 'The wind stays at the top of the circle. Watch where the boat points as it turns.',
+    title: 'Where can you sail?',
+    focus: 'WATCH THE BOAT’S COURSE',
+    lead: 'The wind stays at the top of the circle. Follow the boat marker: which angles make the sail work?',
     transition: 'Turning now: follow the boat around the circle.',
     takeaway: 'Need to go upwind? Zigzag on close-hauled courses instead of aiming straight at the wind.',
     beats: [
@@ -17,8 +18,9 @@ export const THEORY_STAGES = Object.freeze([
     ],
   },
   {
-    title: 'Set the sail',
-    lead: 'Same wind, three courses. Watch the sail open as the wind moves farther aft.',
+    title: 'How far out should the sail be?',
+    focus: 'WATCH THE SAIL',
+    lead: 'Now focus on the sail, not the route. Compare its position at three angles: close in, halfway out, far out.',
     transition: 'Turning now: watch the sail open or close with the course.',
     takeaway: 'Simple rule: wind near the bow, pull in. Wind farther behind, ease out. Fine-tune to the wind you feel aboard.',
     beats: [
@@ -29,6 +31,7 @@ export const THEORY_STAGES = Object.freeze([
   },
   {
     title: 'Turn and adjust',
+    focus: 'WATCH STEERING AND SAIL TOGETHER',
     lead: 'Steering changes where the wind meets the sail. Adjust both together.',
     transition: 'Turning now: steer and trim together.',
     takeaway: 'Turn toward the wind, pull in. Turn away, ease out. You will learn tacking and gybing later.',

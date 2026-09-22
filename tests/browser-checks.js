@@ -42,10 +42,34 @@ async function fixture(values = {}, blocked = false, touch = false, compact = fa
   return { w, d, app, click, key };
 }
 const cases = [
+  ['Lesson 2 coaches the buoy attempt and each upwind diagonal', async () => {
+    const { app: a, d } = await fixture({ 'sail.onboarding.v1': pref('learn'), 'sail.progress.v2': progress(['course']) });
+    assert(a.lessons.current.id === 'upwind' && d.getElementById('coachTitle').textContent === 'Aim at the buoy', 'Lesson 2 starts with the upwind buoy');
+    const b = a.boat, m = a.lessons, wind = a.wind;
+    b.heading = 0; b.twa = 0;
+    m.update(2.6, b, wind, 0);
+    assert(m.stepIdx === 1 && d.getElementById('coachAction').textContent.includes('no-go zone'), 'no-go discovery explains why the direct course fails');
+    b.inIrons = true; m.renderTutorial(b);
+    assert(d.getElementById('coachRecovery').textContent.includes('no-go zone'), 'stalled recovery still explains the no-go zone');
+    b.inIrons = false;
+    b.heading = 45 * Math.PI / 180; b.twa = -45 * Math.PI / 180; b.speed = 2.1;
+    m.update(0.01, b, wind, 0);
+    assert(m.stepIdx === 2 && d.getElementById('coachTitle').textContent === 'Sail the first diagonal', 'coach names the first close-hauled leg');
+    b.pos.z += 72;
+    m.update(0.01, b, wind, 0);
+    assert(m.stepIdx === 3 && d.getElementById('coachAction').textContent.includes('turn the bow through the wind'), 'coach prompts the tack');
+    m.ctx.tacked = true; b.heading = -45 * Math.PI / 180; b.twa = 45 * Math.PI / 180;
+    m.update(0.01, b, wind, 0);
+    assert(m.stepIdx === 4 && d.getElementById('coachTitle').textContent === 'Zigzag to the buoy', 'coach continues toward the mark');
+    b.pos.x = 90;
+    m.update(0.01, b, wind, 0);
+    assert(d.getElementById('coachAction').textContent.includes('west'), 'coach names the side of the buoy for the next tack');
+  }],
   ['theory circle follows the yacht and pause and step hold each position', async () => {
     const { app: a, d, click } = await fixture();
     click('chooseLearn'); click('setSailBtn');
     const marker = d.getElementById('theoryBoatMarker');
+    assert(d.getElementById('introTitle').textContent === 'Where can you sail?' && d.querySelector('.theory-focus').textContent.includes('COURSE'), 'stage one teaches the boat course');
     assert(marker && d.querySelector('[data-theory-point="In Irons — No-Go Zone"].current'), 'circle begins at no-go');
     assert(marker.getAttribute('transform').includes('translate(90 25)'), 'head-to-wind marker sits at the top of the circle');
     click('theoryPause');
@@ -60,6 +84,7 @@ const cases = [
     await pause(200);
     assert(a.theoryDemo.elapsed > 4, 'Play resumes the loop');
     click('theoryNext');
+    assert(d.getElementById('introTitle').textContent === 'How far out should the sail be?' && d.querySelector('.theory-focus').textContent.includes('SAIL'), 'stage two shifts attention to sail trim');
     assert(d.getElementById('theoryBoatMarker') && d.querySelector('[data-theory-point="Close-Hauled"].current'), 'stage two starts with the same live circle');
     click('theoryStep');
     assert(Math.round(a.theoryDemo.boat.heading * 180 / Math.PI) === 90 && d.querySelector('[data-theory-point="Beam Reach"].current'), 'stage two advances chart and sail together');
