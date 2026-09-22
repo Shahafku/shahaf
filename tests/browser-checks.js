@@ -136,13 +136,9 @@ const cases = [
     assert(a.theoryDemo.elapsed > 4, 'Play resumes the loop');
     click('theoryNext');
     assert(d.getElementById('introTitle').textContent === 'How far out should the sail be?' && d.querySelector('.theory-focus').textContent.includes('SAIL'), 'stage two shifts attention to sail trim');
-    assert(d.getElementById('theoryBoatMarker') && d.querySelector('[data-theory-point="In Irons — No-Go Zone"].current'), 'stage two starts in the no-go zone');
+    assert(d.getElementById('theoryBoatMarker') && d.querySelector('[data-theory-point="Close-Hauled"].current'), 'stage two starts with the same live circle');
     click('theoryStep');
-    assert(Math.round(a.theoryDemo.boat.heading * 180 / Math.PI) === 45 && d.querySelector('[data-theory-point="Close-Hauled"].current'), 'stage two leaves the no-go zone');
-    click('theoryStep'); click('theoryStep'); click('theoryStep');
-    assert(d.querySelector('[data-theory-point="Running"].current') && d.getElementById('theoryCaption').textContent.includes('Run'), 'stage two reaches the run scenario');
-    click('theoryStep');
-    assert(d.querySelector('[data-theory-point="In Irons — No-Go Zone"].current'), 'stage two loops back to no-go');
+    assert(Math.round(a.theoryDemo.boat.heading * 180 / Math.PI) === 90 && d.querySelector('[data-theory-point="Beam Reach"].current'), 'stage two advances chart and sail together');
   }],
   ['first Learn visit teaches on the boat before starting Lesson 1', async () => {
     const { app: a, d, w, click, key } = await fixture();

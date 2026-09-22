@@ -15,9 +15,9 @@ test('wind-angle demo shows no-go, close-hauled, beam, broad, and running', () =
 });
 
 test('sail-setting demo eases the sheet as wind moves aft', () => {
-  const poses = [0, 4, 8, 12, 16].map((time) => sampleTheoryPose(1, time));
-  assert.deepEqual(poses.map((pose) => degrees(pose.heading)), [0, 45, 90, 135, 175]);
-  assert.deepEqual(poses.map((pose) => degrees(pose.sheet)), [12, 12, 45, 75, 85]);
+  const poses = [0, 4, 8].map((time) => sampleTheoryPose(1, time));
+  assert.deepEqual(poses.map((pose) => degrees(pose.heading)), [45, 90, 135]);
+  assert.deepEqual(poses.map((pose) => degrees(pose.sheet)), [12, 45, 75]);
 });
 
 test('turning demo sheets in when heading up and eases on bearing away', () => {
@@ -28,7 +28,7 @@ test('turning demo sheets in when heading up and eases on bearing away', () => {
 
 test('each demo loops smoothly and reduced motion holds a stable pose', () => {
   const start = sampleTheoryPose(1, 0);
-  const repeat = sampleTheoryPose(1, 20);
+  const repeat = sampleTheoryPose(1, 12);
   assert.equal(repeat.heading, start.heading);
   assert.equal(repeat.sheet, start.sheet);
   const moving = sampleTheoryPose(2, 3.5);
@@ -43,14 +43,5 @@ test('stepping advances to the next held position and wraps at the end', () => {
   assert.equal(theory.nextTheoryBeatElapsed?.(0, 3.9), 4);
   assert.equal(theory.nextTheoryBeatElapsed?.(0, 4), 8);
   assert.equal(theory.nextTheoryBeatElapsed?.(0, 16), 0);
-  assert.equal(theory.nextTheoryBeatElapsed?.(1, 8), 12);
-});
-
-test('turning captions explain the matching sail action, including the loop', () => {
-  assert.match(sampleTheoryPose(2, 3).caption, /toward.*closer/);
-  assert.match(sampleTheoryPose(2, 7).caption, /away.*out/);
-  assert.match(sampleTheoryPose(2, 15).caption, /toward.*in/);
-  assert.equal(sampleTheoryPose(1, 0).point, 'In Irons — No-Go Zone');
-  assert.equal(sampleTheoryPose(1, 16).point, 'Running');
-  assert.equal(theory.nextTheoryBeatElapsed(1, 16), 0);
+  assert.equal(theory.nextTheoryBeatElapsed?.(1, 8), 0);
 });

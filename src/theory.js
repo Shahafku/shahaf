@@ -20,28 +20,26 @@ export const THEORY_STAGES = Object.freeze([
   {
     title: 'How far out should the sail be?',
     focus: 'WATCH THE SAIL',
-    lead: 'Watch how far the sail is let out as the boat turns from facing the wind to sailing with the wind behind it.',
+    lead: 'Now focus on the sail, not the route. Compare its position at three angles: close in, halfway out, far out.',
     transition: 'Turning now: watch the sail open or close with the course.',
-    takeaway: 'Outside the no-go zone: wind near the bow, sail in. Wind farther behind, sail out. Pointing into the wind? Turn away first.',
+    takeaway: 'Simple rule: wind near the bow, pull in. Wind farther behind, ease out. Fine-tune to the wind you feel aboard.',
     beats: [
-      { heading: 0, sheet: 12, speed: 0.2, caption: 'No-go zone → the sail flaps. Pulling it in will not help; turn away from the wind.' },
       { heading: 45, sheet: 12, speed: 2.2, caption: 'Wind near the bow → pull the sail in close.' },
       { heading: 90, sheet: 45, speed: 2.6, caption: 'Wind from the side → let the sail halfway out.' },
       { heading: 135, sheet: 75, speed: 2.2, caption: 'Wind farther behind → ease the sail well out.' },
-      { heading: 175, sheet: 85, speed: 1.8, caption: 'Run → wind almost directly behind the boat. Let the sail far out.' },
     ],
   },
   {
-    title: 'Turn the boat. Adjust the sail.',
-    focus: 'TOWARD THE WIND: SAIL IN · AWAY: SAIL OUT',
-    lead: 'The bow is the front of the boat. As it turns closer to the wind, pull the sail in. As it turns away, let the sail out.',
+    title: 'Turn and adjust',
+    focus: 'WATCH STEERING AND SAIL TOGETHER',
+    lead: 'Steering changes where the wind meets the sail. Adjust both together.',
     transition: 'Turning now: steer and trim together.',
-    takeaway: 'Pull in means bring the sail closer to the boat’s centre. Let out means allow it farther to the side.',
+    takeaway: 'Turn toward the wind, pull in. Turn away, ease out. You will learn tacking and gybing later.',
     beats: [
-      { heading: 90, sheet: 45, speed: 2.6, caption: 'Start here: wind from the side, sail halfway out.', transition: 'Turning toward the wind → bringing the sail closer to the boat.' },
-      { heading: 45, sheet: 12, speed: 2.2, caption: 'Closer to the wind: the sail is pulled in close.', transition: 'Turning away from the wind → letting the sail out to the side.' },
-      { heading: 90, sheet: 45, speed: 2.6, caption: 'Wind from the side again: the sail is halfway out.', transition: 'Turning farther away → letting the sail out even more.' },
-      { heading: 135, sheet: 75, speed: 2.2, caption: 'Wind from behind the side: the sail is well out.', transition: 'Turning back toward the wind → pulling the sail halfway in.' },
+      { heading: 90, sheet: 45, speed: 2.6, caption: 'Across the wind → the sail sits halfway out.' },
+      { heading: 45, sheet: 12, speed: 2.2, caption: 'Turn toward the wind → pull the sail in.' },
+      { heading: 90, sheet: 45, speed: 2.6, caption: 'Turn away again → ease the sail halfway out.' },
+      { heading: 135, sheet: 75, speed: 2.2, caption: 'Turn farther away → ease the sail even more.' },
     ],
   },
 ]);
@@ -69,7 +67,7 @@ export function sampleTheoryPose(stageIndex, elapsed, { reducedMotion = false } 
     heading,
     sheet: (current.sheet + (next.sheet - current.sheet) * blend) * DEG,
     speed: current.speed + (next.speed - current.speed) * blend,
-    caption: blend > 0 && blend < 1 ? (current.transition ?? stage.transition) : current.caption,
+    caption: blend > 0 && blend < 1 ? stage.transition : current.caption,
     point: pointOfSail(-heading).name,
   };
 }
