@@ -103,7 +103,7 @@ export class SailingFlow {
       <button id="introBack" class="intro-back">← Back</button>
       <p class="intro-meta">${learn ? 'Learn to sail' : 'Test your skills · 6 practical tests'}</p>
       <h1 id="introTitle" tabindex="-1">${showJourney ? 'Your sailing journey' : learn ? 'Keep learning' : 'Put your skills to the test'}</h1>
-      <p class="intro-lead">${showJourney ? 'Before we hop on the boat, let’s learn the basics.' : learn ? 'Continue your guided lessons and build confidence at the helm.' : 'Sail independently, with clear goals and no coaching.'}</p>
+      <p class="intro-lead">${showJourney ? 'Your 3 steps to master sailing' : learn ? 'Continue your guided lessons and build confidence at the helm.' : 'Sail independently, with clear goals and no coaching.'}</p>
       ${showJourney ? `<div class="journey-map">
         <svg class="journey-route" viewBox="0 0 140 320" preserveAspectRatio="none" aria-hidden="true">
           <path class="journey-course" d="M 26 8 C 6 70 112 82 108 146 S 22 222 104 304" />
@@ -111,7 +111,7 @@ export class SailingFlow {
           <path class="journey-finish" d="M 104 304 L 104 283 M 104 284 L 116 287 L 104 291" />
         </svg>
         <ol class="journey-stops">
-          <li><strong>Learn the basics</strong><p>Explore how wind, course, and sail trim work.</p></li>
+          <li><strong>Theory tutorials</strong><p>Explore how wind, course, and sail trim work.</p></li>
           <li><strong>Take the helm</strong><p>Practice aboard the boat with step-by-step guidance in each lesson.</p></li>
           <li><strong>Test your skills</strong><p>When you feel ready, try the six practical tests.</p></li>
         </ol>
@@ -169,7 +169,7 @@ export class SailingFlow {
     this.screen('theory', `
       <div class="theory-header">
         <span class="theory-count">THEORY · ${index + 1} OF ${THEORY_STAGES.length}</span>
-        <button id="theorySkip" class="theory-skip">Skip, take me to the boat</button>
+        <button id="theorySkip" class="theory-skip">Skip, Take the helm</button>
       </div>
       <h1 id="introTitle" tabindex="-1">${stage.title}</h1>
       <p class="theory-focus">${stage.focus}</p>
@@ -177,7 +177,7 @@ export class SailingFlow {
       ${index < 2 ? theoryChartMarkup() : ''}
       <div class="theory-readout"><span id="theoryPoint">Wind and boat</span><p id="theoryCaption"></p></div>
       <div class="theory-playback">
-        <button id="theoryPause" type="button">Pause motion</button>
+        ${index === 0 ? '<button id="theoryPrevious" type="button">Previous position</button>' : '<button id="theoryPause" type="button">Pause motion</button>'}
         <button id="theoryStep" type="button">Next position</button>
       </div>
       <p class="theory-takeaway">${stage.takeaway}</p>
@@ -188,11 +188,13 @@ export class SailingFlow {
     const demo = this.onTheoryStage(index);
     const pauseButton = $('theoryPause');
     const syncPlayback = () => {
+      if (!pauseButton) return;
       pauseButton.disabled = !!demo?.reducedMotion;
       pauseButton.textContent = demo?.reducedMotion ? 'Motion reduced' : demo?.paused ? 'Play motion' : 'Pause motion';
     };
     syncPlayback();
-    pauseButton.addEventListener('click', () => { demo?.togglePause(); syncPlayback(); });
+    pauseButton?.addEventListener('click', () => { demo?.togglePause(); syncPlayback(); });
+    $('theoryPrevious')?.addEventListener('click', () => demo?.previousPosition());
     $('theoryStep').addEventListener('click', () => { demo?.nextPosition(); syncPlayback(); });
     $('theorySkip').addEventListener('click', () => this.finishTheory());
     $('theoryBack')?.addEventListener('click', () => this.showTheory(index - 1));

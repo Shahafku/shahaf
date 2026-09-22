@@ -1,7 +1,7 @@
 // Presentation-only yacht state. It reuses the simulator mesh and sea without
 // touching the exercise boat, LessonManager, marks, timers, or scoring.
 import { Boat, Wind, DEG } from './physics.js';
-import { nextTheoryBeatElapsed, sampleTheoryPose } from './theory.js';
+import { nextTheoryBeatElapsed, previousTheoryBeatElapsed, sampleTheoryPose } from './theory.js';
 import { updateTheoryChart } from './theory-chart.js';
 
 export class TheoryDemo {
@@ -26,7 +26,7 @@ export class TheoryDemo {
     this.stage = index;
     this.elapsed = 0;
     this.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.paused = this.reducedMotion;
+    this.paused = index === 0 || this.reducedMotion;
     this.active = true;
     this.boat.latVel = 0;
     this.boat.boom = 0;
@@ -36,12 +36,18 @@ export class TheoryDemo {
   }
 
   togglePause() {
-    if (!this.reducedMotion) this.paused = !this.paused;
+    if (this.stage !== 0 && !this.reducedMotion) this.paused = !this.paused;
     return this.paused;
   }
 
   nextPosition() {
     this.elapsed = nextTheoryBeatElapsed(this.stage, this.elapsed);
+    this.paused = true;
+    this.update(0, this.reducedMotion);
+  }
+
+  previousPosition() {
+    this.elapsed = previousTheoryBeatElapsed(this.stage, this.elapsed);
     this.paused = true;
     this.update(0, this.reducedMotion);
   }
