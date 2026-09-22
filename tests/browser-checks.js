@@ -116,26 +116,31 @@ const cases = [
     a.lessons.update(2.6, a.boat, a.wind, 0);
     assert(panelNode.scrollTop === 0 && !d.getElementById('coachAdvance').hidden, 'new step brings its notice back into view');
   }],
-  ['theory circle follows the yacht and pause and step hold each position', async () => {
+  ['theory one stays still and previous and next positions update the circle', async () => {
     const { app: a, d, click } = await fixture();
     click('chooseLearn'); click('setSailBtn');
     const marker = d.getElementById('theoryBoatMarker');
-    assert(d.getElementById('introTitle').textContent === 'Where can you sail?' && d.querySelector('.theory-focus').textContent.includes('COURSE'), 'stage one teaches the boat course');
+    assert(d.getElementById('introTitle').textContent === 'Where can you sail?' && d.querySelector('.theory-focus').textContent.includes('Heading'), 'stage one teaches the boat course');
     assert(marker && d.querySelector('[data-theory-point="In Irons — No-Go Zone"].current'), 'circle begins at no-go');
     assert(marker.getAttribute('transform').includes('translate(90 25)'), 'head-to-wind marker sits at the top of the circle');
-    click('theoryPause');
+    assert(!d.getElementById('theoryPause') && d.getElementById('theoryPrevious'), 'stage one has manual position controls');
+    assert(d.getElementById('theorySkip').textContent === 'Skip, Take the helm', 'skip uses the requested wording');
     const held = marker.getAttribute('transform'), time = a.theoryDemo.elapsed;
     await pause(300);
-    assert(a.theoryDemo.elapsed === time && marker.getAttribute('transform') === held, 'Pause freezes boat and diagram together');
+    assert(a.theoryDemo.elapsed === time && marker.getAttribute('transform') === held, 'stage one starts still');
     click('theoryStep');
     assert(Math.round(a.theoryDemo.boat.heading * 180 / Math.PI) === 45, 'step moves to close-hauled');
     assert(marker.getAttribute('transform').includes('translate(136 44)'), '45-degree marker follows the boat around the circle');
     assert(marker.getAttribute('transform') !== held && d.querySelector('[data-theory-point="Close-Hauled"].current'), 'circle highlights the new position');
-    click('theoryPause');
-    for (let i = 0; i < 20 && a.theoryDemo.elapsed <= 4; i++) await pause(100);
-    assert(a.theoryDemo.elapsed > 4, 'Play resumes the loop');
+    click('theoryPrevious');
+    assert(a.theoryDemo.elapsed === 0 && marker.getAttribute('transform') === held, 'Previous returns to the no-go position');
+    click('theoryPrevious');
+    assert(d.querySelector('[data-theory-point="Running"].current'), 'Previous wraps to the last position');
+    click('theoryStep');
+    assert(a.theoryDemo.elapsed === 0, 'Next wraps back to no-go');
     click('theoryNext');
-    assert(d.getElementById('introTitle').textContent === 'How far out should the sail be?' && d.querySelector('.theory-focus').textContent.includes('SAIL'), 'stage two shifts attention to sail trim');
+    assert(!a.theoryDemo.paused && d.getElementById('theoryPause'), 'stage two still animates');
+    assert(d.getElementById('introTitle').textContent === 'How far out should the sail be?' && d.querySelector('.theory-focus').textContent.includes('Sail Trim'), 'stage two shifts attention to sail trim');
     assert(d.getElementById('theoryBoatMarker') && d.querySelector('[data-theory-point="In Irons — No-Go Zone"].current'), 'stage two starts in the no-go zone');
     click('theoryStep');
     assert(Math.round(a.theoryDemo.boat.heading * 180 / Math.PI) === 45 && d.querySelector('[data-theory-point="Close-Hauled"].current'), 'stage two leaves the no-go zone');
@@ -200,7 +205,7 @@ const cases = [
     click('chooseLearn');
     assert(a.flow.state === 'track-introduction' && d.getElementById('introTitle').textContent === 'Your sailing journey', 'overview has the course heading');
     const text = d.querySelector('.journey-page').textContent;
-    assert(text.includes('Before we hop on the boat, let’s learn the basics.') && text.includes('Take the helm') && text.includes('Test your skills'), 'overview tells the full sequence');
+    assert(text.includes('Your 3 steps to master sailing') && text.includes('Take the helm') && text.includes('Test your skills'), 'overview tells the full sequence');
     assert(!text.includes('Lesson 1 of 7') && !text.includes('three quick visual tutorials'), 'overview avoids lesson-specific and tutorial-count copy');
     assert(d.querySelector('.journey-route .journey-boat') && d.getElementById('setSailBtn').textContent.includes('Start the tutorials'), 'small boat route and clear action are present');
     click('setSailBtn');

@@ -39,8 +39,8 @@ test('a first Learn choice explains the journey before entering theory', () => {
     SailingFlow.prototype.introduce.call(flow, 'learn');
     assert.equal(screen.state, 'track-introduction');
     assert.match(screen.html, /Your sailing journey/);
-    assert.match(screen.html, /Before we hop on the boat, let’s learn the basics\./);
-    assert.match(screen.html, /Learn the basics[\s\S]*Take the helm[\s\S]*Test your skills/);
+    assert.match(screen.html, /Your 3 steps to master sailing/);
+    assert.match(screen.html, /Theory tutorials[\s\S]*Take the helm[\s\S]*Test your skills/);
     assert.match(screen.html, /Start the tutorials/);
     assert.doesNotMatch(screen.html, /Feel the wind|Lesson 1 of 7|Fill the sail|three quick visual tutorials/i);
     listeners.get('setSailBtn:click')();

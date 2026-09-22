@@ -70,3 +70,9 @@ test('trim captions describe sail adjustments on a steady course', () => {
   assert.equal(sampleTheoryPose(1, 16).point, 'Running');
   assert.equal(theory.nextTheoryBeatElapsed(1, 16), 0);
 });
+
+test('previous position goes back and wraps to the final position', () => {
+  assert.equal(theory.previousTheoryBeatElapsed(0, 4), 0);
+  assert.equal(theory.previousTheoryBeatElapsed(0, 0), 16);
+  assert.equal(theory.previousTheoryBeatElapsed(0, 16), 12);
+});

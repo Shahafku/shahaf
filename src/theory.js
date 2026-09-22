@@ -5,10 +5,10 @@ import { DEG, pointOfSail } from './physics.js';
 export const THEORY_STAGES = Object.freeze([
   {
     title: 'Where can you sail?',
-    focus: 'WATCH THE BOAT’S COURSE',
-    lead: 'The wind stays at the top of the circle. Follow the boat marker: which angles make the sail work?',
-    transition: 'Turning now: follow the boat around the circle.',
-    takeaway: 'Need to go upwind? Zigzag on close-hauled courses instead of aiming straight at the wind.',
+    focus: 'Watch the Boat’s Heading',
+    lead: 'The wind comes from the top. See how the boat’s angle relative to the wind determines your point of sail.',
+    transition: 'Turning now: track the boat as it rotates around the wind wheel.',
+    takeaway: 'Need to go upwind? You can’t sail straight into the wind—zigzag on close-hauled courses instead.',
     beats: [
       { heading: 0, sheet: 12, speed: 0.2, caption: 'Bow into the wind → the sail flaps and the boat loses drive.' },
       { heading: 45, sheet: 12, speed: 2.2, caption: 'Bow angled off the wind → the sail fills and the boat climbs upwind.' },
@@ -19,10 +19,10 @@ export const THEORY_STAGES = Object.freeze([
   },
   {
     title: 'How far out should the sail be?',
-    focus: 'WATCH THE SAIL',
-    lead: 'Watch how far the sail is let out as the boat turns from facing the wind to sailing with the wind behind it.',
-    transition: 'Turning now: watch the sail open or close with the course.',
-    takeaway: 'Outside the no-go zone: wind near the bow, sail in. Wind farther behind, sail out. Pointing into the wind? Turn away first.',
+    focus: 'Watch the Sail Trim',
+    lead: 'As the boat turns relative to the wind, watch how the sail adjusts in or out to stay filled.',
+    transition: 'Turning now: watch the sail pull in (tight) or let out (eased) with each course change.',
+    takeaway: 'General rule: Wind near the bow? Pull sail in. Wind behind you? Let sail out.',
     beats: [
       { heading: 0, sheet: 12, speed: 0.2, caption: 'No-go zone → the sail flaps. Pulling it in will not help; turn away from the wind.' },
       { heading: 45, sheet: 12, speed: 2.2, caption: 'Wind near the bow → pull the sail in close.' },
@@ -54,6 +54,11 @@ const smooth = (value) => value * value * (3 - 2 * value);
 export function nextTheoryBeatElapsed(stageIndex, elapsed) {
   const count = (THEORY_STAGES[stageIndex] ?? THEORY_STAGES[0]).beats.length;
   return ((Math.floor(elapsed / BEAT_SECONDS) + 1) % count) * BEAT_SECONDS;
+}
+
+export function previousTheoryBeatElapsed(stageIndex, elapsed) {
+  const count = (THEORY_STAGES[stageIndex] ?? THEORY_STAGES[0]).beats.length;
+  return ((Math.floor(elapsed / BEAT_SECONDS) - 1 + count) % count) * BEAT_SECONDS;
 }
 
 export function sampleTheoryPose(stageIndex, elapsed, { reducedMotion = false } = {}) {
