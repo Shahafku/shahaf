@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.min.js';
 import { LessonManager } from '../src/lessons.js';
 import { Boat, Wind, DEG } from '../src/physics.js';
-import { byId } from '../src/curriculum.js';
+import { byId, upwindSailCue } from '../src/curriculum.js';
 
 // Minimal DOM boundary; exercise the real runtime, curriculum, boat and buoys.
 const elements = new Map();
@@ -86,4 +86,36 @@ test('Lesson 1 waits for sail adjustment instead of transient startup efficiency
     manager.update(1 / 60, boat, wind, 0);
   }
   assert.equal(manager.stepIdx, 0);
+});
+
+test('Lesson 2 guides a no-go attempt, a close-hauled leg, a tack, then the buoy', () => {
+  const { manager, boat, wind } = setup('upwind');
+  assert.equal(manager.stepIdx, 0);
+  boat.twa = 0; boat.heading = 0;
+  manager.update(2.6, boat, wind, 0);
+  assert.equal(manager.stepIdx, 1);
+  boat.twa = -45 * DEG; boat.heading = 45 * DEG; boat.speed = 2.1;
+  manager.update(0.1, boat, wind, 0);
+  assert.equal(manager.stepIdx, 2);
+  boat.pos.z += 72;
+  manager.update(0.1, boat, wind, 0);
+  assert.equal(manager.stepIdx, 3);
+  manager.ctx.tacked = true; boat.twa = 45 * DEG; boat.heading = -45 * DEG;
+  manager.update(0.1, boat, wind, 0);
+  assert.equal(manager.stepIdx, 4);
+  boat.pos.z = 300; boat.pos.x = 0;
+  manager.update(0.1, boat, wind, 0);
+  assert.equal(manager.completed, true);
+});
+
+test('Lesson 2 sail cue distinguishes no-go, loose, tight and filled trim', () => {
+  const boat = { twa: 0, sheet: 50 * DEG, bestSheet: 12 * DEG, luffing: true, stalled: false };
+  assert.match(upwindSailCue(boat, false), /turn.*before.*sail/i);
+  boat.twa = 45 * DEG;
+  assert.match(upwindSailCue(boat, false), /too loose.*tighten.*↑/i);
+  assert.match(upwindSailCue(boat, true), /too loose.*sail-in/i);
+  boat.sheet = 2 * DEG; boat.luffing = false; boat.stalled = true;
+  assert.match(upwindSailCue(boat, false), /too tight.*ease.*↓/i);
+  boat.sheet = 12 * DEG; boat.stalled = false;
+  assert.match(upwindSailCue(boat, false), /trim.*good/i);
 });

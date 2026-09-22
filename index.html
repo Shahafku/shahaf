@@ -26,9 +26,14 @@
   <div id="lessonStep" class="step"></div>
   <section id="tutorialCoach" hidden aria-label="Lesson guidance">
     <div class="coach-heading"><span id="coachCount"></span><button id="guidanceToggle" aria-expanded="true" aria-controls="coachBody">Hide guidance</button></div>
+    <ol id="coachSteps" class="coach-steps" aria-label="Lesson steps"></ol>
     <div id="coachBody">
+      <div id="coachAdvance" class="coach-advance" role="status" hidden></div>
       <h2 id="coachTitle" aria-live="polite"></h2>
-      <p id="coachAction"></p><p id="coachHelm"></p>
+      <p id="coachGoal" class="coach-goal" hidden></p>
+      <div class="coach-instruction"><strong id="coachSteerLabel" hidden>STEER</strong><p id="coachAction"></p></div>
+      <p id="coachHelm"></p>
+      <div id="coachSailRow" class="coach-instruction" hidden><strong>SAIL</strong><p id="coachSail"></p></div>
       <progress id="coachProgress" max="1" value="0" aria-label="Current objective progress"></progress>
       <div id="coachProgressText"></div><p id="coachRecovery" role="status"></p>
     </div>

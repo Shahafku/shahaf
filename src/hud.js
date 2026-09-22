@@ -43,13 +43,41 @@ export class HUD {
     document.body.classList.toggle('tutorial-active', !!state);
     $('tutorialCoach').hidden = !state;
     document.querySelectorAll('.tutorial-highlight').forEach((el) => el.classList.remove('tutorial-highlight'));
-    if (!state) return;
+    if (!state) {
+      clearTimeout(this._coachAdvanceTimer);
+      this._coachTutorial = null;
+      this._coachIndex = null;
+      $('coachAdvance').hidden = true;
+      return;
+    }
     this.tipEl.innerHTML = '';
     this._tipKey = '';
-    const { tutorial, step, index, count, hidden, ctx, boat } = state;
+    const { tutorial, steps, step, index, count, hidden, ctx, boat } = state;
     const touch = matchMedia('(pointer: coarse)').matches;
     const helm = this.helmMode || 'tiller';
     $('coachCount').textContent = `STEP ${index + 1} OF ${count}`;
+    if (tutorial !== this._coachTutorial || index !== this._coachIndex) {
+      const previousIndex = tutorial === this._coachTutorial ? this._coachIndex : null;
+      const strip = $('coachSteps');
+      strip.replaceChildren(...steps.map((item, i) => {
+        const node = document.createElement('li');
+        node.textContent = String(i + 1);
+        node.setAttribute('aria-label', `Step ${i + 1}: ${item.title}`);
+        if (i === index) node.setAttribute('aria-current', 'step');
+        if (i < index) node.classList.add('done');
+        return node;
+      }));
+      const advance = $('coachAdvance');
+      clearTimeout(this._coachAdvanceTimer);
+      if (previousIndex !== null && previousIndex < index) {
+        advance.textContent = `✓ ${steps[previousIndex].title} complete · Next: ${step.title}`;
+        advance.hidden = false;
+        $('lessonPanel').scrollTop = 0;
+        this._coachAdvanceTimer = setTimeout(() => { advance.hidden = true; }, 4000);
+      } else advance.hidden = true;
+      this._coachTutorial = tutorial;
+      this._coachIndex = index;
+    }
     $('guidanceToggle').textContent = hidden ? 'Show guidance' : 'Hide guidance';
     $('guidanceToggle').setAttribute('aria-expanded', String(!hidden));
     $('coachBody').hidden = hidden;
@@ -57,23 +85,42 @@ export class HUD {
     for (const id of step.highlights || []) $(id)?.classList.add('tutorial-highlight');
     // Do not repeatedly replace the live heading while the same step is active.
     if ($('coachTitle').textContent !== step.title) $('coachTitle').textContent = step.title;
-    $('coachAction').textContent = step[touch ? 'touch' : 'keyboard'];
+    $('coachGoal').hidden = !step.goal;
+    $('coachGoal').textContent = step.goal || '';
+    const action = step[touch ? 'touch' : 'keyboard'];
+    $('coachAction').textContent = typeof action === 'function' ? action(boat, ctx) : action;
     $('coachHelm').textContent = step.controls === 'helm' ? tutorial[helm] : '';
+    const sail = step.sail;
+    $('coachSailRow').hidden = !sail;
+    $('coachSail').textContent = typeof sail === 'function' ? sail(boat, touch) : sail || '';
     const progress = $('coachProgress');
-    progress.hidden = step.progress === 'distance';
+    progress.hidden = ['distance', 'tack'].includes(step.progress);
     if (step.progress === 'course') {
       progress.value = Math.min(1, ctx.onCourseTime / 15);
       $('coachProgressText').textContent = `${Math.min(15, ctx.onCourseTime).toFixed(1)} / 15 seconds on course`;
     } else if (step.progress === 'trim') {
       progress.value = Math.max(0, Math.min(1, boat.efficiency / 0.7, boat.speed / 1.2));
       $('coachProgressText').textContent = 'Fill the sail and build speed';
+    } else if (step.progress === 'no-go') {
+      progress.value = Math.min(1, ctx.timeInNoGo / 2.5);
+      $('coachProgressText').textContent = 'Watch the sail and speed while pointing upwind';
+    } else if (step.progress === 'speed') {
+      progress.value = Math.min(1, Math.max(0, boat.speed / 1.8));
+      $('coachProgressText').textContent = 'Build speed on a close-hauled course';
+    } else if (step.progress === 'upwind-leg') {
+      progress.value = Math.min(1, Math.max(0, (boat.pos.z - ctx.upwindLegStartZ) / 70));
+      $('coachProgressText').textContent = `${Math.max(0, Math.round(boat.pos.z - ctx.upwindLegStartZ))} / 70 m gained upwind`;
+    } else if (step.progress === 'tack') {
+      $('coachProgressText').textContent = 'Turn through the wind onto the other close-hauled course';
     } else {
       $('coachProgressText').textContent = Number.isFinite(ctx.distToMark) ? `${Math.round(ctx.distToMark)} m to the ring` : 'Destination: the glowing ring';
     }
     const recovery = boat.inIrons ? tutorial.recovery.irons
       : boat.stalled ? tutorial.recovery.stall
       : boat.luffing && index > 0 ? tutorial.recovery.luff : '';
-    $('coachAction').hidden = !!recovery;
+    const hideAction = !!recovery && !sail;
+    $('coachAction').hidden = hideAction;
+    $('coachSteerLabel').hidden = !sail || hideAction;
     if ($('coachRecovery').textContent !== recovery) $('coachRecovery').textContent = recovery;
   }
 

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEG } from '../src/physics.js';
 import { THEORY_STAGES, sampleTheoryPose } from '../src/theory.js';
+import * as theory from '../src/theory.js';
 
 const degrees = (radians) => Math.round(radians / DEG);
 
@@ -32,6 +33,15 @@ test('each demo loops smoothly and reduced motion holds a stable pose', () => {
   assert.equal(repeat.sheet, start.sheet);
   const moving = sampleTheoryPose(2, 3.5);
   assert.ok(moving.heading < 90 * DEG && moving.heading > 45 * DEG);
+  assert.match(sampleTheoryPose(0, 3.5).caption, /Turning/);
   assert.equal(sampleTheoryPose(2, 7, { reducedMotion: true }).heading,
     sampleTheoryPose(2, 0, { reducedMotion: true }).heading);
+});
+
+test('stepping advances to the next held position and wraps at the end', () => {
+  assert.equal(theory.nextTheoryBeatElapsed?.(0, 0), 4);
+  assert.equal(theory.nextTheoryBeatElapsed?.(0, 3.9), 4);
+  assert.equal(theory.nextTheoryBeatElapsed?.(0, 4), 8);
+  assert.equal(theory.nextTheoryBeatElapsed?.(0, 16), 0);
+  assert.equal(theory.nextTheoryBeatElapsed?.(1, 8), 0);
 });

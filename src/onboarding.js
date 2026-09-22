@@ -2,6 +2,7 @@
 import { storage } from './storage.js';
 import { byId } from './curriculum.js';
 import { THEORY_STAGES } from './theory.js';
+import { theoryChartMarkup } from './theory-chart.js';
 const PREF_KEY = 'sail.onboarding.v1';
 const $ = (id) => document.getElementById(id);
 
@@ -148,18 +149,32 @@ export class SailingFlow {
         <button id="theorySkip" class="theory-skip">Skip, take me to the boat</button>
       </div>
       <h1 id="introTitle" tabindex="-1">${stage.title}</h1>
+      <p class="theory-focus">${stage.focus}</p>
       <p class="theory-lead">${stage.lead}</p>
+      ${index < 2 ? theoryChartMarkup() : ''}
       <div class="theory-readout"><span id="theoryPoint">Wind and boat</span><p id="theoryCaption"></p></div>
+      <div class="theory-playback">
+        <button id="theoryPause" type="button">Pause motion</button>
+        <button id="theoryStep" type="button">Next position</button>
+      </div>
       <p class="theory-takeaway">${stage.takeaway}</p>
       <div class="theory-nav">
         ${index ? '<button id="theoryBack" class="intro-back">← Back</button>' : '<span></span>'}
         <button id="theoryNext" class="primary">${index === THEORY_STAGES.length - 1 ? 'Take me to the boat' : 'Next'} <span aria-hidden="true">→</span></button>
       </div>`);
+    const demo = this.onTheoryStage(index);
+    const pauseButton = $('theoryPause');
+    const syncPlayback = () => {
+      pauseButton.disabled = !!demo?.reducedMotion;
+      pauseButton.textContent = demo?.reducedMotion ? 'Motion reduced' : demo?.paused ? 'Play motion' : 'Pause motion';
+    };
+    syncPlayback();
+    pauseButton.addEventListener('click', () => { demo?.togglePause(); syncPlayback(); });
+    $('theoryStep').addEventListener('click', () => { demo?.nextPosition(); syncPlayback(); });
     $('theorySkip').addEventListener('click', () => this.finishTheory());
     $('theoryBack')?.addEventListener('click', () => this.showTheory(index - 1));
     $('theoryNext').addEventListener('click', () => index === THEORY_STAGES.length - 1
       ? this.finishTheory() : this.showTheory(index + 1));
-    this.onTheoryStage(index);
   }
 
   finishTheory() {
