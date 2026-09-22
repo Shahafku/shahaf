@@ -224,6 +224,13 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
 #completeOverlay h2 { color: #7dffb5; font-size: 20px; margin-bottom: 10px; }
 #completeOverlay p { font-size: 14px; line-height: 1.55; opacity: 0.92; }
 .raceResult { font-size: 16px; margin-bottom: 10px; color: #8fd0ff; }
+.recap + .recap { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(140, 190, 230, 0.22); }
+.recapLabel {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: #8fd0ff; opacity: 0.8; margin-bottom: 6px;
+}
+#completeOverlay .nextTitle { font-weight: 600; color: #cfe6f8; opacity: 1; }
+#completeOverlay .nextPreview { margin-top: 3px; opacity: 0.78; }
 .btnrow { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
 .btnrow button {
   padding: 10px 18px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;

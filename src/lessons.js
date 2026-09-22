@@ -5,6 +5,7 @@ import { makeBuoy, bobBuoy, bobLifeRing } from './ocean.js';
 import { LESSONS, TESTS, byId } from './curriculum.js';
 import { MobController } from './mob.js';
 import { storage } from './storage.js';
+import { burstConfetti } from './confetti.js';
 
 const PROGRESS_KEY = 'sail.progress.v2';
 
@@ -293,11 +294,16 @@ export class LessonManager {
     }
     const time = L.timed ? `<div class="raceResult">Course time: <b>${fmtTime(this.raceTime)}</b></div>` : '';
     const head = L.type === 'test' ? `✔ PASSED · ${L.title}` : `✔ ${L.title} — complete`;
-    this.overlayText.innerHTML = `<h2>${head}</h2>${time}<p>${L.takeaway}</p>`;
     const next = this.nextTarget();
+    this.overlayText.innerHTML =
+      `<h2>${head}</h2>${time}${recapBlock('What you learned', `<p>${L.takeaway}</p>`, !!L.takeaway)}` +
+      recapBlock('Next up', next
+        ? `<p class="nextTitle">${next.title}</p><p class="nextPreview">${firstSentence(next.brief)}</p>`
+        : `<p class="nextTitle">${trackFinished(L.type)}</p>`);
     this.nextBtn.textContent = next ? `Next: ${shortTitle(next)} ⏎` : 'View track progress ⏎';
     this.hud.setTutorial(null);
     this.overlay.classList.add('show');
+    burstConfetti();
     this._syncPickers();
   }
 
@@ -311,6 +317,23 @@ export class LessonManager {
     this.reviewBtn.style.display = this.reviewTarget ? '' : 'none';
     this.failOverlay.classList.add('show');
   }
+}
+
+function recapBlock(label, body, show = true) {
+  return show ? `<div class="recap"><div class="recapLabel">${label}</div>${body}</div>` : '';
+}
+
+function trackFinished(type) {
+  return type === 'test'
+    ? 'Every exercise passed — that is the full practical exam.'
+    : 'That is the whole LEARN track. The EXAM track is where you prove it.';
+}
+
+function firstSentence(brief) {
+  // Briefs carry inline markup and run a few sentences; the overlay wants one plain line.
+  const text = String(brief).replace(/<[^>]+>/g, '');
+  const end = text.match(/^.*?[.!?](?=\s|$)/);
+  return (end ? end[0] : text).trim();
 }
 
 function shortTitle(item) {
