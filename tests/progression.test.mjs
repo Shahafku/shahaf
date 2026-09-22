@@ -119,3 +119,41 @@ test('Lesson 2 sail cue distinguishes no-go, loose, tight and filled trim', () =
   boat.sheet = 12 * DEG; boat.stalled = false;
   assert.match(upwindSailCue(boat, false), /trim.*good/i);
 });
+
+test('Lesson 3 requires speed, a fresh tack, and acceleration on the new side before rings', () => {
+  const { manager: m, boat: b, wind } = setup('tack');
+  const tick = () => m.update(0.05, b, wind, 0);
+  b.pos.x = 90; b.pos.z = 170;
+  b.speed = 2.2; b.twa = -45 * DEG;
+  tick();
+  assert.equal(m.markIdx, 0, 'early rings cannot bypass coaching');
+  assert.equal(m.stepIdx, 0, 'wait for 4.5 knots');
+  b.speed = 2.4; b.twa = -10 * DEG;
+  tick();
+  assert.equal(m.stepIdx, 0, 'speed in the no-go zone is not ready to tack');
+  b.twa = -45 * DEG;
+  m.ctx.tacked = true;
+  tick();
+  assert.equal(m.stepIdx, 1);
+  tick();
+  assert.equal(m.stepIdx, 1, 'an earlier tack does not count');
+  b.twa = 170 * DEG;
+  tick();
+  assert.equal(m.stepIdx, 1, 'a gybe is not a tack');
+  b.twa = -45 * DEG; tick();
+  // A new bow-first crossing reaches the recovery step, but not the ring step.
+  b.twa = 5 * DEG; b.speed = 1.1; tick();
+  assert.equal(m.stepIdx, 2);
+  tick();
+  assert.equal(m.stepIdx, 2, 'crossing the wind is not a settled tack');
+  b.twa = 45 * DEG; b.speed = 2.4; b.efficiency = 0.2; tick();
+  assert.equal(m.stepIdx, 2, 'wait for the sail to fill');
+  b.efficiency = 0.8; b.twa = -45 * DEG; tick();
+  assert.equal(m.stepIdx, 2, 'returning to the original side does not count');
+  b.twa = 45 * DEG; tick();
+  assert.equal(m.stepIdx, 3);
+  for (const mark of m.current.marks) {
+    b.pos.x = mark.x; b.pos.z = mark.z; tick();
+  }
+  assert.equal(m.completed, true);
+});

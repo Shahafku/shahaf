@@ -105,8 +105,10 @@ export class HUD {
       progress.value = Math.min(1, ctx.timeInNoGo / 2.5);
       $('coachProgressText').textContent = 'Watch the sail and speed while pointing upwind';
     } else if (step.progress === 'speed') {
-      progress.value = Math.min(1, Math.max(0, boat.speed / 1.8));
-      $('coachProgressText').textContent = 'Build speed on a close-hauled course';
+      progress.value = Math.min(1, Math.max(0, boat.speed / (step.speedTarget ?? 1.8)));
+      $('coachProgressText').textContent = step.speedTarget
+        ? `${Math.max(0, boat.speed * KNOTS).toFixed(1)} / ${(step.speedTarget * KNOTS).toFixed(1)} kn · close-hauled`
+        : 'Build speed on a close-hauled course';
     } else if (step.progress === 'upwind-leg') {
       progress.value = Math.min(1, Math.max(0, (boat.pos.z - ctx.upwindLegStartZ) / 70));
       $('coachProgressText').textContent = `${Math.max(0, Math.round(boat.pos.z - ctx.upwindLegStartZ))} / 70 m gained upwind`;
