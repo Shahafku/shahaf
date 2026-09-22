@@ -1,5 +1,5 @@
 // hud.js — instruments: wind rose, trim gauge, speed/heel, status + tips
-import { DEG, KNOTS, SHEET_MAX, pointOfSail, tackName, driveCoefAt } from './physics.js';
+import { DEG, KNOTS, SHEET_MAX, driveCoefAt } from './physics.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -7,12 +7,19 @@ export class HUD {
   constructor() {
     this.rose = $('windRose');
     this.roseCtx = this.rose.getContext('2d');
+    this.showSailingSectors = false;
+    const sectorsToggle = $('windSectorsToggle');
+    sectorsToggle.addEventListener('click', () => {
+      this.showSailingSectors = !this.showSailingSectors;
+      sectorsToggle.setAttribute('aria-pressed', String(this.showSailingSectors));
+      const label = this.showSailingSectors ? 'Hide points of sail' : 'Show points of sail';
+      sectorsToggle.setAttribute('aria-label', label);
+      sectorsToggle.title = label;
+    });
     this.trim = $('trimBar');
     this.trimCtx = this.trim.getContext('2d');
     this.speedEl = $('speedVal');
     this.headingEl = $('headingVal');
-    this.posEl = $('posName');
-    this.tackEl = $('tackName');
     this.heelEl = $('heelVal');
     this.effEl = $('effVal');
     this.twsEl = $('twsVal');
@@ -21,8 +28,6 @@ export class HUD {
     this.tipEl = $('tipText');
     this._tipTimer = 0;
     this._tipKey = '';
-    this.posPanel = $('posPanel');
-    this.posCtx = $('posDiagram').getContext('2d');
     this.mode = 'full';
   }
 
@@ -38,11 +43,27 @@ export class HUD {
     }
   }
 
+  // Move the existing readouts so lesson runtime remains their single data source.
+  _placeTutorialFeedback(state) {
+    const target = state && !state.hidden && state.step.feedbackTarget;
+    const row = target === 'steer' ? $('coachSteerRow')
+      : target === 'sail' ? $('coachSailRow') : null;
+    const feedback = $('coachFeedback');
+    const home = row || $('coachFeedbackHome');
+    if (feedback.parentElement !== home) home.append(feedback);
+    const mark = $('markInfo');
+    const markHome = row ? feedback : $('lessonPanel');
+    if (mark.parentElement !== markHome) markHome.append(mark);
+    // The mark readout already includes distance, bearing and ring number.
+    $('coachProgressText').hidden = !!row && state.step.progress === 'distance';
+  }
+
   setTutorial(state) {
     this.tutorialState = state;
     document.body.classList.toggle('tutorial-active', !!state);
     $('tutorialCoach').hidden = !state;
     document.querySelectorAll('.tutorial-highlight').forEach((el) => el.classList.remove('tutorial-highlight'));
+    this._placeTutorialFeedback(state);
     if (!state) {
       clearTimeout(this._coachAdvanceTimer);
       this._coachTutorial = null;
@@ -54,7 +75,6 @@ export class HUD {
     this._tipKey = '';
     const { tutorial, steps, step, index, count, hidden, ctx, boat } = state;
     const touch = matchMedia('(pointer: coarse)').matches;
-    const helm = this.helmMode || 'tiller';
     $('coachCount').textContent = `STEP ${index + 1} OF ${count}`;
     if (tutorial !== this._coachTutorial || index !== this._coachIndex) {
       const previousIndex = tutorial === this._coachTutorial ? this._coachIndex : null;
@@ -89,7 +109,6 @@ export class HUD {
     $('coachGoal').textContent = step.goal || '';
     const action = step[touch ? 'touch' : 'keyboard'];
     $('coachAction').textContent = typeof action === 'function' ? action(boat, ctx) : action;
-    $('coachHelm').textContent = step.controls === 'helm' ? tutorial[helm] : '';
     const sail = step.sail;
     $('coachSailRow').hidden = !sail;
     $('coachSail').textContent = typeof sail === 'function' ? sail(boat, touch) : sail || '';
@@ -129,16 +148,11 @@ export class HUD {
   update(dt, boat, wind) {
     this._drawRose(boat, wind);
     if (this.mode !== 'exam') this._drawTrim(boat);
-    if (this.posPanel.classList.contains('show')) this._drawPos(boat);
 
     const kn = (boat.speed * KNOTS);
     this.speedEl.textContent = kn.toFixed(1);
     const hdg = ((boat.heading / DEG) % 360 + 360) % 360;
     this.headingEl.textContent = String(Math.round(hdg)).padStart(3, '0') + '°';
-    const pos = pointOfSail(boat.twa);
-    this.posEl.textContent = pos.name;
-    this.posEl.classList.toggle('danger', !!pos.danger);
-    this.tackEl.textContent = Math.abs(boat.twa) < 8 * DEG ? 'Head to wind' : tackName(boat.twa);
     this.heelEl.textContent = Math.round(Math.abs(boat.heel) / DEG) + '°';
     this.heelEl.classList.toggle('danger', Math.abs(boat.heel) > 30 * DEG);
     this.effEl.textContent = Math.round(boat.efficiency * 100) + '%';
@@ -188,22 +202,64 @@ export class HUD {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // No-go wedge around the true wind (±35°)
     const twa = boat.twa;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(twa); // boat-up: 0 rad = straight up
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.arc(0, 0, R + 8, -Math.PI / 2 - 35 * DEG, -Math.PI / 2 + 35 * DEG);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(255, 80, 80, 0.16)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 110, 110, 0.35)';
-    ctx.setLineDash([4, 4]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
+    if (this.showSailingSectors) {
+      // Sectors are relative to TRUE wind, mirrored on both tacks. Keep
+      // their boundaries aligned with pointOfSail() and the reference chart.
+      const sectors = [
+        { a0: 0, a1: 32, color: 'rgba(255,80,80,.16)', label: ['NO-GO'] },
+        { a0: 32, a1: 52, color: 'rgba(110,190,255,.16)', label: ['CLOSE', 'HAUL'] },
+        { a0: 52, a1: 80, color: 'rgba(110,255,190,.12)', label: ['CLOSE', 'REACH'] },
+        { a0: 80, a1: 102, color: 'rgba(120,255,140,.18)', label: ['BEAM'] },
+        { a0: 102, a1: 150, color: 'rgba(110,255,190,.12)', label: ['BROAD'] },
+        { a0: 150, a1: 180, color: 'rgba(190,170,255,.16)', label: ['RUN'] },
+      ];
+      for (const sector of sectors) {
+        for (const side of [-1, 1]) {
+          const a = twa - Math.PI / 2 + side * sector.a0 * DEG;
+          const b = twa - Math.PI / 2 + side * sector.a1 * DEG;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, R + 8, Math.min(a, b), Math.max(a, b));
+          ctx.closePath();
+          ctx.fillStyle = sector.color;
+          ctx.fill();
+        }
+      }
+      // Use one stable set of labels, positioned with true wind but drawn
+      // in screen coordinates to stay upright as the sectors rotate.
+      const labelSide = -1;
+      ctx.font = 'bold 10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const sector of sectors) {
+        const mid = sector.a0 === 0 ? 20 : sector.a1 === 180 ? 180
+          : (sector.a0 + sector.a1) / 2;
+        const angle = twa - Math.PI / 2 + labelSide * mid * DEG;
+        const x = cx + Math.cos(angle) * (R - 14);
+        const y = cy + Math.sin(angle) * (R - 14);
+        ctx.fillStyle = 'rgba(225,240,250,.9)';
+        sector.label.forEach((line, i) => {
+          ctx.fillText(line, x, y + (i - (sector.label.length - 1) / 2) * 10);
+        });
+      }
+      ctx.textBaseline = 'alphabetic';
+    } else {
+      // Original simple compass: only the translucent no-go wedge.
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(twa);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, R + 8, -Math.PI / 2 - 35 * DEG, -Math.PI / 2 + 35 * DEG);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255, 80, 80, .16)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 110, 110, .35)';
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // Compass ticks (rotate with heading so it stays boat-up)
     ctx.save();
@@ -279,104 +335,6 @@ export class HUD {
     ctx.beginPath();
     ctx.moveTo(0, -4);
     ctx.lineTo(0, 16);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // ------------------------------------------- Points-of-sail diagram
-  // Wind-up chart: wind always blows from the top; your boat rides around
-  // the circle at its current true wind angle. A boat drawn on the RIGHT
-  // half has the wind over its port side (port tack) and vice versa.
-  _drawPos(boat) {
-    const ctx = this.posCtx;
-    const W = 300, H = 320, cx = W / 2, cy = H / 2 + 14, R = 100;
-    ctx.clearRect(0, 0, W, H);
-
-    // Sectors mirrored port/starboard. Angles in degrees off the wind.
-    const sectors = [
-      { a0: 0, a1: 32, color: 'rgba(255,90,90,0.30)', label: 'NO-GO' },
-      { a0: 32, a1: 52, color: 'rgba(110,190,255,0.22)', label: 'CLOSE-HAULED' },
-      { a0: 52, a1: 80, color: 'rgba(110,255,190,0.16)', label: 'CLOSE REACH' },
-      { a0: 80, a1: 102, color: 'rgba(120,255,140,0.26)', label: 'BEAM REACH' },
-      { a0: 102, a1: 150, color: 'rgba(110,255,190,0.16)', label: 'BROAD REACH' },
-      { a0: 150, a1: 180, color: 'rgba(190,170,255,0.20)', label: 'RUN' },
-    ];
-    for (const s of sectors) {
-      for (const side of [1, -1]) {
-        const s0 = -Math.PI / 2 + side * s.a0 * DEG;
-        const s1 = -Math.PI / 2 + side * s.a1 * DEG;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, R, Math.min(s0, s1), Math.max(s0, s1));
-        ctx.closePath();
-        ctx.fillStyle = s.color;
-        ctx.fill();
-      }
-    }
-    ctx.strokeStyle = 'rgba(170,210,240,0.4)';
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Labels along the starboard (left) side, horizontal for readability
-    ctx.fillStyle = 'rgba(225,240,250,0.92)';
-    ctx.font = 'bold 9px system-ui';
-    for (const s of sectors) {
-      const mid = (s.a0 + s.a1) / 2;
-      const a = -Math.PI / 2 - mid * DEG; // left half
-      const lr = R - 34;
-      const x = cx + Math.cos(a) * lr, y = cy + Math.sin(a) * lr;
-      ctx.textAlign = 'center';
-      if (s.label === 'NO-GO') { ctx.fillText(s.label, cx, cy - R + 16); continue; }
-      if (s.label === 'RUN') { ctx.fillText(s.label, cx, cy + R - 12); continue; }
-      ctx.fillText(s.label, x, y + 3);
-    }
-
-    // Wind arrows blowing in from the top
-    ctx.strokeStyle = '#4fa8ff';
-    ctx.fillStyle = '#4fa8ff';
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    for (const off of [-16, 0, 16]) {
-      ctx.beginPath();
-      ctx.moveTo(cx + off, 8);
-      ctx.lineTo(cx + off, 26);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(cx + off, 34);
-      ctx.lineTo(cx + off - 5, 25);
-      ctx.lineTo(cx + off + 5, 25);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.fillStyle = '#8fd0ff';
-    ctx.font = 'bold 10px system-ui';
-    ctx.textAlign = 'left';
-    ctx.fillText('WIND', cx + 30, 22);
-
-    // Your boat on the circle: TWA + = starboard tack → LEFT half.
-    const t = boat.twa;
-    const px = cx - Math.sin(t) * R;
-    const py = cy - Math.cos(t) * R;
-    ctx.save();
-    ctx.translate(px, py);
-    ctx.rotate(-t); // bow rotated |twa| away from the wind, toward its side
-    ctx.beginPath();
-    ctx.moveTo(0, -13);
-    ctx.bezierCurveTo(6, -5, 6, 7, 4, 12);
-    ctx.lineTo(-4, 12);
-    ctx.bezierCurveTo(-6, 7, -6, -5, 0, -13);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-    ctx.strokeStyle = '#123';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.rotate(-boat.boom); // same convention as the wind rose glyph
-    ctx.strokeStyle = '#345';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, -2);
-    ctx.lineTo(0, 9);
     ctx.stroke();
     ctx.restore();
   }

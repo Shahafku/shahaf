@@ -10,6 +10,7 @@ import { mobPassCondition } from './mob.js';
 // { id, type: 'lesson'|'test', title, brief, environment, wind, boat, marks, steps,
 //   pass?(boat,ctx), fail?(boat,ctx)->reason|null, timed?, timeLimit?,
 //   timeLimitMsg?, mob?, stepHint?, takeaway, requires?, review?, free?, tutorial? }
+// Tutorial steps may set feedbackTarget: 'steer' | 'sail' to attach distance feedback.
 // Track order controls unlocking/navigation. Legacy requires identifies review lessons only.
 
 const ironsFail = (sec) => (b, ctx) =>
@@ -95,7 +96,7 @@ export const LESSONS = [
         done: (b, ctx) => ctx.onCourseTime >= 15,
       },
       {
-        title: 'Reach the ring', controls: 'helm', highlights: ['markInfo'], progress: 'distance',
+        title: 'Reach the ring', controls: 'helm', highlights: ['markInfo'], progress: 'distance', feedbackTarget: 'steer',
         keyboard: 'Sail through the glowing ring. Use small steering corrections and keep the sail filled.',
         touch: 'Sail through the glowing ring. Use small steering corrections and keep the sail filled.',
         text: 'Steady hand! Sail through the ring to finish.', done: () => false,
@@ -145,7 +146,7 @@ export const LESSONS = [
         done: (b) => b.speed > 1.8 && Math.abs(b.twa) >= 35 * DEG && Math.abs(b.twa) <= 65 * DEG,
       },
       {
-        title: 'Sail the first diagonal', controls: 'helm', highlights: ['btnLeft', 'btnRight', 'btnIn', 'btnOut', 'trimBar', 'markInfo'], progress: 'upwind-leg',
+        title: 'Sail the first diagonal', controls: 'helm', highlights: ['btnLeft', 'btnRight', 'btnIn', 'btnOut', 'trimBar', 'markInfo'], progress: 'upwind-leg', feedbackTarget: 'steer',
         goal: 'Gain 70 m toward the buoy while sailing at an angle to the wind.',
         keyboard: 'You are close-hauled. Keep about 45° to the wind and sail this diagonal for 70 m, even though the buoy is off your bow.',
         touch: 'You are close-hauled. Use small helm taps to keep about 45° to the wind for 70 m.',
@@ -164,7 +165,7 @@ export const LESSONS = [
         done: (b, ctx) => ctx.tacked && Math.sign(b.twa) === -ctx.upwindFirstSign && b.speed > 0.8 && Math.abs(b.twa) >= 35 * DEG && Math.abs(b.twa) <= 75 * DEG,
       },
       {
-        title: 'Zigzag to the buoy', controls: 'helm', highlights: ['btnLeft', 'btnRight', 'btnIn', 'btnOut', 'trimBar', 'markInfo'], progress: 'distance',
+        title: 'Zigzag to the buoy', controls: 'helm', highlights: ['btnLeft', 'btnRight', 'btnIn', 'btnOut', 'trimBar', 'markInfo'], progress: 'distance', feedbackTarget: 'steer',
         goal: 'Keep making progress upwind, then pass through the glowing ring.',
         keyboard: (b, ctx) => finalUpwindGuidance(b, ctx, false),
         touch: (b, ctx) => finalUpwindGuidance(b, ctx, true),
@@ -236,7 +237,7 @@ export const LESSONS = [
       },
       {
         title: 'Sail the rings in order', controls: 'helm',
-        highlights: ['btnLeft', 'btnRight', 'btnIn', 'btnOut', 'trimBar', 'markInfo'], progress: 'distance',
+        highlights: ['btnLeft', 'btnRight', 'btnIn', 'btnOut', 'trimBar', 'markInfo'], progress: 'distance', feedbackTarget: 'steer',
         goal: 'Pass through all three glowing rings, one at a time.',
         keyboard: 'Use ← / → to sail toward the glowing ring. If it lies in the no-go zone, sail a diagonal and tack again. Build speed before each tack.',
         touch: 'Use the helm buttons to sail toward the glowing ring. If it lies in the no-go zone, sail a diagonal and tack again. Build speed before each tack.',
