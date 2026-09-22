@@ -31,11 +31,15 @@
       <div id="coachAdvance" class="coach-advance" role="status" hidden></div>
       <h2 id="coachTitle" aria-live="polite"></h2>
       <p id="coachGoal" class="coach-goal" hidden></p>
-      <div class="coach-instruction"><strong id="coachSteerLabel" hidden>STEER</strong><p id="coachAction"></p></div>
-      <p id="coachHelm"></p>
+      <div id="coachSteerRow" class="coach-instruction"><strong id="coachSteerLabel" hidden>STEER</strong><p id="coachAction"></p></div>
       <div id="coachSailRow" class="coach-instruction" hidden><strong>SAIL</strong><p id="coachSail"></p></div>
-      <progress id="coachProgress" max="1" value="0" aria-label="Current objective progress"></progress>
-      <div id="coachProgressText"></div><p id="coachRecovery" role="status"></p>
+      <div id="coachFeedbackHome">
+        <div id="coachFeedback">
+          <progress id="coachProgress" max="1" value="0" aria-label="Current objective progress"></progress>
+          <div id="coachProgressText"></div>
+        </div>
+      </div>
+      <p id="coachRecovery" role="status"></p>
     </div>
   </section>
   <div id="markInfo" class="markinfo"></div>
@@ -49,6 +53,9 @@
 
 <!-- Wind rose (top-right) -->
 <div id="rosePanel" class="panel">
+  <button id="windSectorsToggle" type="button" aria-label="Show points of sail" aria-pressed="false" aria-controls="windRose" title="Show points of sail">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5Z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+  </button>
   <canvas id="windRose" width="230" height="230"></canvas>
   <div class="windnums">
     <span class="true">■ TRUE <b id="twsVal">12</b> kn</span>
@@ -62,7 +69,6 @@
   <div class="inst"><label>HDG</label><div class="big small" id="headingVal">000°</div></div>
   <div class="inst"><label>HEEL</label><div class="big small" id="heelVal">0°</div></div>
   <div class="inst"><label>TRIM</label><div class="big small" id="effVal">0%</div></div>
-  <div class="posrow"><span id="posName">—</span><span id="tackName" class="tack">—</span></div>
 </div>
 
 <!-- Trim bar + coach tip (bottom-center) -->

@@ -88,6 +88,15 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
 /* ---------------- Wind rose ---------------- */
 #rosePanel { top: 14px; right: 14px; padding: 8px; z-index: 4; }
 #windRose { display: block; }
+#windSectorsToggle {
+  position: absolute; top: 1px; right: 1px;
+  display: grid; place-items: center; width: 30px; height: 30px;
+  border: 0; border-radius: 50%; background: transparent;
+  color: #b5cada; cursor: pointer;
+}
+#windSectorsToggle:hover, #windSectorsToggle[aria-pressed="true"] {
+  color: #fff; background: rgba(140, 190, 230, .16);
+}
 .windnums { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 6px 4px; }
 .windnums .true { color: #4fa8ff; }
 .windnums .app { color: #ffb14f; }
@@ -101,13 +110,6 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
 .big { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .big.small { font-size: 22px; padding-top: 5px; }
 .big small { font-size: 12px; opacity: 0.6; margin-left: 3px; }
-.posrow {
-  grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline;
-  border-top: 1px solid rgba(255,255,255,0.12); margin-top: 6px; padding-top: 6px;
-}
-#posName { font-weight: 700; font-size: 14.5px; color: #8fd0ff; }
-#posName.danger { color: #ff8a80; }
-.tack { font-size: 12px; opacity: 0.75; }
 #heelVal.danger { color: #ff8a80; }
 
 /* ---------------- Trim + tip ---------------- */
@@ -132,9 +134,9 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
 
 /* ---------------- Right rail ---------------- */
 #rail {
-  position: fixed; right: 14px; top: 290px; z-index: 4;
+  position: fixed; right: 14px; top: 326px; z-index: 4;
   display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
-  max-height: calc(100vh - 304px); overflow-y: auto; scrollbar-width: none;
+  max-height: calc(100vh - 340px); overflow-y: auto; scrollbar-width: none;
 }
 #rail::-webkit-scrollbar { display: none; }
 .pickhead {
@@ -322,7 +324,7 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
   #rail .railbtn { text-align: center; }
   #autoTrimBtn { font-size: 11px; }
 
-  /* ---- Top band: SPEED · point-of-sail pill (next to the menu button) ---- */
+  /* ---- Top band: SPEED (next to the menu button) ---- */
   #instruments {
     left: 62px; top: 12px; right: auto; bottom: auto;
     display: flex; align-items: baseline; gap: 10px;
@@ -335,22 +337,14 @@ body.exam-mode #lessonStep { background: rgba(255, 178, 80, 0.10); border-left-c
   #instruments .inst:first-child label { display: none; }
   #instruments .big { font-size: 18px; }
   #instruments .big small { font-size: 11px; }
-  #instruments .posrow {
-    grid-column: auto; border: 0; margin: 0; padding: 0;
-    min-width: 0; white-space: nowrap;
-  }
-  #instruments .tack { display: none; }
-  #posName {
-    font-size: 12.5px; display: inline-block; max-width: 100%;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-
-  /* ---- Wind rose: smaller, tucked top-right ---- */
-  #rosePanel { top: 8px; right: 4px; transform: scale(0.54); transform-origin: top right; }
+  /* Keep the wind labels at readable sizes instead of scaling the whole panel. */
+  #rosePanel { top: 8px; right: 4px; width: 190px; transform: none; }
+  #windRose { width: 170px; height: 170px; margin: auto; }
+  .windnums { font-size: 10px; padding: 2px 0 4px; gap: 4px; }
 
   /* ---- Lesson banner: the current step + goal, full width below the rose ---- */
   #lessonPanel {
-    top: 158px; left: 10px; right: 10px; width: auto;
+    top: 224px; left: 10px; right: 10px; width: auto;
     max-height: 26vh; overflow-y: auto; padding: 10px 12px;
   }
   #lessonBrief { display: none; }               /* drop the long explanation */
@@ -576,13 +570,12 @@ body.tutorial-active #lessonPanel { max-height: calc(100dvh - 220px); overflow-y
 .coach-instruction { margin: 8px 0; padding: 8px 10px; background: #244257; border-radius: 5px; }
 .coach-instruction strong { display: block; color: #8fd0ff; font-size: 10px; letter-spacing: .09em; }
 .coach-instruction p { margin: 3px 0 0 !important; }
-#coachAction, #coachHelm, #coachRecovery { font-size: 13px; line-height: 1.5; margin: 8px 0; }
+#coachAction, #coachRecovery { font-size: 13px; line-height: 1.5; margin: 8px 0; }
 #coachSail { color: #edf8ff; font-size: 13px; line-height: 1.45; }
-#coachHelm { color: #aac6d9; }
 #coachProgress { display: block; width: 100%; height: 8px; accent-color: #7dffb5; margin: 16px 0 8px; }
 #coachProgressText { color: #9eeac7; font-size: 12px; }
 #coachRecovery { color: #ffcd8b; }
-#coachRecovery:empty, #coachHelm:empty { display: none; }
+#coachRecovery:empty { display: none; }
 .tutorial-highlight { outline: 2px solid #ffbe6a; outline-offset: 4px; border-radius: 6px; }
 #completeOverlay, #failOverlay { overflow-y: auto; padding: 20px; }
 @media (max-width: 600px) {
@@ -590,9 +583,9 @@ body.tutorial-active #lessonPanel { max-height: calc(100dvh - 220px); overflow-y
   .btnrow button { min-height: 44px; }
 }
 @media (max-width: 860px) {
-  body.tutorial-active #lessonPanel { max-height: calc(100dvh - 345px); }
+  body.tutorial-active #lessonPanel { max-height: calc(100dvh - 415px); }
   #coachTitle { font-size: 17px; }
-  #coachAction, #coachHelm, #coachRecovery { font-size: 12px; }
+  #coachAction, #coachRecovery { font-size: 12px; }
   #guidanceToggle { min-height: 36px; }
   #replayIntroBtn { font-size: 13px; }
   #rail .track-switch { min-height: 44px; }
@@ -606,6 +599,37 @@ body.tutorial-active #lessonPanel { max-height: calc(100dvh - 220px); overflow-y
 }
 @media (max-width: 860px) and (max-height: 500px) {
   body.tutorial-active #lessonPanel { top: 70px; right: auto; width: min(340px, 48vw); max-height: calc(100dvh - 175px); }
-  #rosePanel { transform: scale(0.42); }
+  #rosePanel { width: 180px; }
+  #windRose { width: 154px; height: 154px; }
   #trimWrap { left: auto; width: min(280px, 42vw); }
+}
+
+/* The instruction surface shares the theory card's cool paper palette. */
+#lessonPanel {
+  background: rgba(247, 249, 252, .72); color: #103660;
+  border-color: #d6dfe9;
+}
+#lessonTitle, #coachTitle { color: #103660; }
+.environment-info, #coachCount { color: #38627e; }
+#guidanceToggle { color: #315b78; border-bottom-color: #7895aa; }
+#coachGoal { color: #25634e; }
+.coach-instruction { background: rgba(218, 231, 241, .8); }
+.coach-instruction strong { color: #315b78; }
+#coachSail { color: #103660; }
+.coach-steps li { color: #526c80; border-color: #9fb4c4; }
+.coach-steps li.done { background: #d5eadf; color: #245d48; border-color: #7fae96; }
+#coachAdvance { background: #d9eee4; color: #245d48; border-left-color: #438369; }
+#coachProgress { accent-color: #267653; }
+#coachProgressText, .markinfo { color: #246347; }
+#coachRecovery { color: #885010; }
+#coachFeedback { font-variant-numeric: tabular-nums; }
+.coach-instruction #coachFeedback { margin-top: 8px; }
+.coach-instruction #coachProgress { margin-top: 8px; }
+#coachProgress[hidden] { display: none; }
+body.exam-mode #lessonTitle { color: #805015; }
+body.exam-mode #lessonPanel { border-color: #b88b4c; }
+body.exam-mode .exampill { color: #805015; border-color: #b88b4c; }
+
+@media (min-width: 861px) and (max-width: 900px) {
+  #rail { top: 266px; bottom: auto; max-height: calc(100vh - 280px); }
 }
