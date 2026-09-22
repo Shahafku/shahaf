@@ -144,6 +144,23 @@ const cases = [
     click('theoryStep');
     assert(d.querySelector('[data-theory-point="In Irons — No-Go Zone"].current'), 'stage two loops back to no-go');
   }],
+  ['third theory teaches sail feel on a steady course, including paused steps', async () => {
+    const { app: a, d, click } = await fixture();
+    click('chooseLearn'); click('setSailBtn'); click('theoryNext'); click('theoryNext');
+    assert(d.getElementById('introTitle').textContent.includes('set correctly'), 'stage three asks how to recognize correct trim');
+    assert(a.theoryDemo.boat.luff > 0.9 && a.view._flap > 0.9, 'demo starts with a visibly flapping sail');
+    const heading = a.theoryDemo.boat.heading;
+    click('theoryStep');
+    assert(a.theoryDemo.paused && a.theoryDemo.boat.heading === heading, 'step holds the course');
+    assert(a.theoryDemo.boat.luff === 0 && a.view._flap === 0, 'paused filled position shows a filled sail');
+    click('theoryStep');
+    assert(a.theoryDemo.boat.luff > 0 && a.view._flap > 0, 'easing produces flutter even when stepped');
+    click('theoryStep');
+    assert(a.theoryDemo.boat.luff === 0 && a.view._flap === 0, 'pulling back in fills the sail');
+    assert(a.theoryDemo.boat.heading === heading, 'all trim positions hold the same course');
+    click('theoryBack');
+    assert(d.querySelector('.theory-compass'), 'returning to stage two preserves its circle');
+  }],
   ['first Learn visit teaches on the boat before starting Lesson 1', async () => {
     const { app: a, d, w, click, key } = await fixture();
     click('chooseLearn'); click('setSailBtn');

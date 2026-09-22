@@ -32,16 +32,17 @@ export const THEORY_STAGES = Object.freeze([
     ],
   },
   {
-    title: 'Turn the boat. Adjust the sail.',
-    focus: 'TOWARD THE WIND: SAIL IN · AWAY: SAIL OUT',
-    lead: 'The bow is the front of the boat. As it turns closer to the wind, pull the sail in. As it turns away, let the sail out.',
-    transition: 'Turning now: steer and trim together.',
-    takeaway: 'Pull in means bring the sail closer to the boat’s centre. Let out means allow it farther to the side.',
+    title: 'How do I know the sail is set correctly?',
+    focus: 'SAME COURSE · WATCH THE SAIL',
+    lead: 'Keep the boat pointing the same way. Watch the sail flap when it is too far out, then fill as you pull it in.',
+    transition: 'Adjusting the sail while holding the same course.',
+    takeaway: 'Let the sail out until it just starts to flap. Then pull it in a little until the flapping stops.',
+    // Fixed course and speed keep apparent wind steady for this trim comparison.
     beats: [
-      { heading: 90, sheet: 45, speed: 2.6, caption: 'Start here: wind from the side, sail halfway out.', transition: 'Turning toward the wind → bringing the sail closer to the boat.' },
-      { heading: 45, sheet: 12, speed: 2.2, caption: 'Closer to the wind: the sail is pulled in close.', transition: 'Turning away from the wind → letting the sail out to the side.' },
-      { heading: 90, sheet: 45, speed: 2.6, caption: 'Wind from the side again: the sail is halfway out.', transition: 'Turning farther away → letting the sail out even more.' },
-      { heading: 135, sheet: 75, speed: 2.2, caption: 'Wind from behind the side: the sail is well out.', transition: 'Turning back toward the wind → pulling the sail halfway in.' },
+      { heading: 90, sheet: 75, speed: 2.6, caption: 'Too far out: the sail is flapping. Pull it in slowly.', transition: 'Pulling the sail in slowly. Watch the flapping fade.' },
+      { heading: 90, sheet: 55, speed: 2.6, caption: 'Stop here: the sail has filled and stopped flapping.', transition: 'Now let it out a little. Watch for the first flutter.' },
+      { heading: 90, sheet: 61, speed: 2.6, caption: 'It starts to flap again. Pull it back in just a little.', transition: 'Pulling in a little until the sail fills again.' },
+      { heading: 90, sheet: 55, speed: 2.6, caption: 'Filled again. This is how you find the right sail setting.', transition: 'Watch again: letting the sail too far out makes it flap.' },
     ],
   },
 ]);
