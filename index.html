@@ -20,6 +20,7 @@
 
 <!-- Lesson panel (top-left) -->
 <div id="lessonPanel" class="panel">
+  <button id="lessonExpand" type="button" aria-expanded="false" aria-controls="lessonPanel" aria-label="Show lesson details" title="Show lesson details">▾</button>
   <div id="lessonTitle" tabindex="-1">Lesson</div>
   <div id="environmentInfo" class="environment-info"></div>
   <div id="lessonBrief" class="brief"></div>
@@ -57,6 +58,7 @@
     <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5Z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
   </button>
   <canvas id="windRose" width="230" height="230"></canvas>
+  <button id="roseExpand" type="button" aria-expanded="false" aria-controls="rosePanel" aria-label="Enlarge wind rose" title="Enlarge wind rose"></button>
   <div class="windnums">
     <span class="true">■ TRUE <b id="twsVal">12</b> kn</span>
     <span class="app">■ APP <b id="awsVal">12</b> kn</span>
