@@ -239,12 +239,54 @@ function setMenu(open) {
   if (open) document.getElementById('learnTrack').focus();
   else if (rail.contains(document.activeElement)) button.focus();
 }
+// Phones keep help and the helm switch in the menu; wider screens keep them on screen.
+const helpBtn = document.getElementById('helpBtn');
+function placeTools() {
+  const helm = document.getElementById('helmBtn');
+  if (compactMenu.matches) document.getElementById('rail').insertBefore(helpBtn, document.getElementById('autoTrimBtn')).after(helm);
+  else document.getElementById('quickControls').prepend(helpBtn, helm);
+  helpBtn.textContent = compactMenu.matches ? '? Help' : '?';
+}
+helpBtn.addEventListener('click', () => { if (compactMenu.matches) setMenu(false); });
+
+// Phones collapse the lesson card to a strip and the wind rose to a corner dial.
+const lessonExpand = document.getElementById('lessonExpand');
+let lessonCollapseTimer = 0;
+function setLessonExpanded(open) {
+  clearTimeout(lessonCollapseTimer);
+  document.body.classList.toggle('lesson-expanded', open);
+  const label = open ? 'Hide lesson details' : 'Show lesson details';
+  lessonExpand.textContent = open ? '▴' : '▾';
+  lessonExpand.setAttribute('aria-expanded', String(open));
+  lessonExpand.setAttribute('aria-label', label);
+  lessonExpand.title = label;
+  if (open && compactMenu.matches) lessonCollapseTimer = setTimeout(() => setLessonExpanded(false), 12000);
+}
+lessonExpand.addEventListener('click', (event) => {
+  event.stopPropagation();
+  setLessonExpanded(!document.body.classList.contains('lesson-expanded'));
+});
+document.getElementById('lessonPanel').addEventListener('click', (event) => {
+  if (compactMenu.matches && !event.target.closest('button')) setLessonExpanded(!document.body.classList.contains('lesson-expanded'));
+});
+const roseExpand = document.getElementById('roseExpand');
+roseExpand.addEventListener('click', () => {
+  const open = document.body.classList.toggle('rose-expanded');
+  const label = open ? 'Shrink wind rose' : 'Enlarge wind rose';
+  roseExpand.setAttribute('aria-expanded', String(open));
+  roseExpand.setAttribute('aria-label', label);
+  roseExpand.title = label;
+});
+
 compactMenu.addEventListener('change', () => {
   setMenu(false);
   setFreePanel(!compactMenu.matches);
+  placeTools();
+  setLessonExpanded(false);
 });
 setMenu(false);
 setFreePanel(!compactMenu.matches);
+placeTools();
 addEventListener('keydown', (event) => {
   if (!document.body.classList.contains('menu-open')) return;
   if (event.key === 'Escape') setMenu(false);
@@ -388,10 +430,13 @@ flow = new SailingFlow(lessons, (item) => {
   view.update(0, boat, wind, env.time);
   updateCamera(1);
   if (item.free) setFreePanel(!compactMenu.matches);
+  // Show the full card briefly when a lesson starts; it folds away on its own.
+  setLessonExpanded(compactMenu.matches);
 }, (state) => {
   clearInput();
   setMenu(false);
   if (state !== 'theory') theoryDemo.stop();
+  syncRotatePrompt();
   if (audio) audio.master.gain.setTargetAtTime(state === 'sailing' && audioOn ? 1 : 0, audio.ctx.currentTime, 0.2);
 }, () => ({ touch: matchMedia('(pointer: coarse)').matches, helm: helmMode }),
   (stage) => {
@@ -401,6 +446,23 @@ flow = new SailingFlow(lessons, (item) => {
     theoryDemo.setStage(stage);
     return theoryDemo;
   });
+// Phones held upright are asked to rotate; sailing pauses while the prompt is up.
+const rotatePrompt = document.getElementById('rotatePrompt');
+const uprightPhone = matchMedia('(orientation: portrait) and (max-width: 600px) and (pointer: coarse)');
+function syncRotatePrompt() {
+  const show = canSail() && uprightPhone.matches && storage.getItem('rotatePrompt') !== 'never';
+  if (show === !rotatePrompt.hidden) return;
+  rotatePrompt.hidden = !show;
+  document.getElementById('simulator').inert = show || !canSail();
+  if (show) { clearInput(); document.getElementById('rotateKeep').focus(); }
+}
+uprightPhone.addEventListener('change', syncRotatePrompt);
+// "Keep portrait" is remembered on this device.
+document.getElementById('rotateKeep').addEventListener('click', () => {
+  storage.setItem('rotatePrompt', 'never');
+  syncRotatePrompt();
+});
+
 document.getElementById('guidanceToggle').addEventListener('click', () => {
   lessons.guidanceHidden = !lessons.guidanceHidden;
   lessons.renderTutorial(boat);
@@ -431,7 +493,7 @@ function frame(now) {
     return;
   }
 
-  if (!canSail() || document.hidden) {
+  if (!canSail() || document.hidden || !rotatePrompt.hidden) {
     renderer.render(scene, camera);
     return;
   }
