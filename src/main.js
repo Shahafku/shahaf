@@ -436,6 +436,7 @@ flow = new SailingFlow(lessons, (item) => {
   clearInput();
   setMenu(false);
   if (state !== 'theory') theoryDemo.stop();
+  syncRotatePrompt();
   if (audio) audio.master.gain.setTargetAtTime(state === 'sailing' && audioOn ? 1 : 0, audio.ctx.currentTime, 0.2);
 }, () => ({ touch: matchMedia('(pointer: coarse)').matches, helm: helmMode }),
   (stage) => {
@@ -445,6 +446,24 @@ flow = new SailingFlow(lessons, (item) => {
     theoryDemo.setStage(stage);
     return theoryDemo;
   });
+// Phones held upright are asked to rotate; sailing pauses while the prompt is up.
+const rotatePrompt = document.getElementById('rotatePrompt');
+const uprightPhone = matchMedia('(orientation: portrait) and (max-width: 600px) and (pointer: coarse)');
+let rotateSkipped = false;
+function syncRotatePrompt() {
+  const show = canSail() && uprightPhone.matches && !rotateSkipped && storage.getItem('rotatePrompt') !== 'never';
+  if (show === !rotatePrompt.hidden) return;
+  rotatePrompt.hidden = !show;
+  document.getElementById('simulator').inert = show || !canSail();
+  if (show) { clearInput(); document.getElementById('rotateNotNow').focus(); }
+}
+uprightPhone.addEventListener('change', syncRotatePrompt);
+document.getElementById('rotateNotNow').addEventListener('click', () => { rotateSkipped = true; syncRotatePrompt(); });
+document.getElementById('rotateNever').addEventListener('click', () => {
+  storage.setItem('rotatePrompt', 'never');
+  syncRotatePrompt();
+});
+
 document.getElementById('guidanceToggle').addEventListener('click', () => {
   lessons.guidanceHidden = !lessons.guidanceHidden;
   lessons.renderTutorial(boat);
@@ -475,7 +494,7 @@ function frame(now) {
     return;
   }
 
-  if (!canSail() || document.hidden) {
+  if (!canSail() || document.hidden || !rotatePrompt.hidden) {
     renderer.render(scene, camera);
     return;
   }

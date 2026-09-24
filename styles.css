@@ -688,3 +688,39 @@ body.menu-open #rail { transform: translateX(0); }
   #windRose { width: 84px; height: 84px; }
   body.rose-expanded #windRose { width: 154px; height: 154px; }
 }
+
+/* ---------------- Rotate-to-landscape prompt (phones held upright) ---------------- */
+#rotatePrompt {
+  position: fixed; inset: 0; z-index: 12;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 24px; text-align: center;
+  background: rgba(6, 20, 34, 0.84); color: #eaf3fa;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+#rotatePrompt h2 { font-size: 21px; }
+#rotatePrompt p { font-size: 15px; line-height: 1.45; opacity: .85; max-width: 26ch; }
+.rotate-icon { width: 112px; height: 112px; }
+.rotate-device { transform-origin: 48px 48px; animation: rotateTurn 2.8s ease-in-out infinite; }
+.rotate-arrow { stroke-dasharray: 90; animation: rotateDraw 2.8s ease-in-out infinite; }
+@keyframes rotateTurn {
+  0%, 18% { transform: rotate(0deg); }
+  48%, 78% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes rotateDraw {
+  0%, 12% { stroke-dashoffset: 90; opacity: 0; }
+  20% { opacity: 1; }
+  48%, 78% { stroke-dashoffset: 0; opacity: 1; }
+  92%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rotate-device { transform: rotate(-90deg); }
+  .rotate-arrow { stroke-dashoffset: 0; opacity: 1; }
+}
+.rotate-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
+.rotate-actions button {
+  min-height: 44px; padding: 10px 18px; border-radius: 10px; cursor: pointer;
+  background: transparent; color: #eaf3fa; border: 1px solid rgba(234, 243, 250, .4);
+  font: inherit; font-size: 14px; font-weight: 600;
+}
+.rotate-actions #rotateNotNow { background: #1e6fb8; border-color: #4fa8ff; }
