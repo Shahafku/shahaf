@@ -449,17 +449,16 @@ flow = new SailingFlow(lessons, (item) => {
 // Phones held upright are asked to rotate; sailing pauses while the prompt is up.
 const rotatePrompt = document.getElementById('rotatePrompt');
 const uprightPhone = matchMedia('(orientation: portrait) and (max-width: 600px) and (pointer: coarse)');
-let rotateSkipped = false;
 function syncRotatePrompt() {
-  const show = canSail() && uprightPhone.matches && !rotateSkipped && storage.getItem('rotatePrompt') !== 'never';
+  const show = canSail() && uprightPhone.matches && storage.getItem('rotatePrompt') !== 'never';
   if (show === !rotatePrompt.hidden) return;
   rotatePrompt.hidden = !show;
   document.getElementById('simulator').inert = show || !canSail();
-  if (show) { clearInput(); document.getElementById('rotateNotNow').focus(); }
+  if (show) { clearInput(); document.getElementById('rotateKeep').focus(); }
 }
 uprightPhone.addEventListener('change', syncRotatePrompt);
-document.getElementById('rotateNotNow').addEventListener('click', () => { rotateSkipped = true; syncRotatePrompt(); });
-document.getElementById('rotateNever').addEventListener('click', () => {
+// "Keep portrait" is remembered on this device.
+document.getElementById('rotateKeep').addEventListener('click', () => {
   storage.setItem('rotatePrompt', 'never');
   syncRotatePrompt();
 });

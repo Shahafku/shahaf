@@ -723,4 +723,3 @@ body.menu-open #rail { transform: translateX(0); }
   background: transparent; color: #eaf3fa; border: 1px solid rgba(234, 243, 250, .4);
   font: inherit; font-size: 14px; font-weight: 600;
 }
-.rotate-actions #rotateNotNow { background: #1e6fb8; border-color: #4fa8ff; }
