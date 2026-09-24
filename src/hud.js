@@ -145,8 +145,8 @@ export class HUD {
     if ($('coachRecovery').textContent !== recovery) $('coachRecovery').textContent = recovery;
   }
 
-  update(dt, boat, wind) {
-    this._drawRose(boat, wind);
+  update(dt, boat, wind, targets = []) {
+    this._drawRose(boat, wind, targets);
     if (this.mode !== 'exam') this._drawTrim(boat);
 
     const kn = (boat.speed * KNOTS);
@@ -187,7 +187,7 @@ export class HUD {
   }
 
   // ------------------------------------------------------ Wind rose (boat-up)
-  _drawRose(boat, wind) {
+  _drawRose(boat, wind, targets = []) {
     const ctx = this.roseCtx;
     const W = this.rose.width, H = this.rose.height;
     const cx = W / 2, cy = H / 2, R = W / 2 - 26;
@@ -318,6 +318,8 @@ export class HUD {
     arrow(twa, 34, '#4fa8ff', 'TRUE');
     arrow(boat.awa, 20, '#ffb14f', 'APP');
 
+    this._drawTargets(ctx, cx, cy, R, boat, targets);
+
     // Boat glyph (always up)
     ctx.save();
     ctx.translate(cx, cy);
@@ -335,6 +337,83 @@ export class HUD {
     ctx.beginPath();
     ctx.moveTo(0, -4);
     ctx.lineTo(0, 16);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Buoys on the rose, radar-style: boat-up bearing, distance on a square-root
+  // scale to 500 m so the next buoy visibly closes in and grows. Later buoys are
+  // smaller, faded and numbered; past 500 m a buoy waits on the rim with a pointer.
+  _drawTargets(ctx, cx, cy, R, boat, targets) {
+    const RANGE = 500; // metres at the rim
+    const inner = 30;  // clear of the boat glyph
+    const pos = (rel, r) => [cx + Math.sin(rel) * r, cy - Math.cos(rel) * r];
+    // Later buoys first, so the next one is drawn on top.
+    for (let i = targets.length - 1; i >= 0; i--) {
+      const dx = targets[i].x - boat.pos.x, dz = targets[i].z - boat.pos.z;
+      const dist = Math.hypot(dx, dz);
+      const rel = Math.atan2(-dx, dz) - boat.heading;
+      const active = i === 0, off = dist > RANGE;
+      const r = off ? R - 4 : inner + (R - inner) * Math.sqrt(dist / RANGE);
+      const [x, y] = pos(rel, r);
+      const s = !active ? 0.75 : off ? 0.9 : 1 + 0.9 * (1 - Math.sqrt(dist / RANGE));
+      ctx.save();
+      ctx.globalAlpha = active ? 1 : 0.45;
+      if (off) {
+        const [px, py] = pos(rel, R + 3);
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(rel);
+        ctx.beginPath();
+        ctx.moveTo(0, -8); ctx.lineTo(6, 3); ctx.lineTo(-6, 3);
+        ctx.closePath();
+        ctx.fillStyle = '#ff5a1f';
+        ctx.fill();
+        ctx.restore();
+      }
+      this._drawBuoyIcon(ctx, x, y, s);
+      ctx.font = `bold ${active ? 11 : 10}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(4, 20, 30, 0.95)';
+      let label, lx, ly;
+      if (active) {
+        label = `${Math.round(dist)} m`;
+        // Close in, the label sits outside the buoy so it never covers the boat.
+        [lx, ly] = r < 62 ? pos(rel, r + 24) : [x, y + 12 * s + 8];
+        ctx.fillStyle = '#ffffff';
+      } else {
+        label = String(i + 1);
+        [lx, ly] = [x + 10, y - 10];
+        ctx.fillStyle = '#ffe14d';
+      }
+      ctx.strokeText(label, lx, ly);
+      ctx.fillText(label, lx, ly);
+      ctx.restore();
+    }
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  // Orange can buoy with a yellow flag, matching the 3D mark.
+  _drawBuoyIcon(ctx, x, y, s) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(s, s);
+    ctx.strokeStyle = '#cfd8e0';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -15); ctx.lineTo(0, -4);
+    ctx.stroke();
+    ctx.fillStyle = '#ffe14d';
+    ctx.fillRect(0.8, -15, 8, 5);
+    ctx.strokeStyle = 'rgba(4, 20, 30, 0.95)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-6, 8); ctx.lineTo(-4, -4); ctx.lineTo(4, -4); ctx.lineTo(6, 8);
+    ctx.closePath();
+    ctx.fillStyle = '#ff5a1f';
+    ctx.fill();
     ctx.stroke();
     ctx.restore();
   }

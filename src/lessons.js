@@ -52,6 +52,16 @@ export class LessonManager {
 
   lesson() { return this.current; }
 
+  // World positions still to sail to, in order: the active mark first, then the
+  // later ones (or the man-overboard ring). Empty when there is nothing to show.
+  targets() {
+    if (this.completed || this.failed) return [];
+    const marks = this.current.marks.slice(this.markIdx);
+    if (marks.length) return marks;
+    const ring = this.mobCtl?.ring;
+    return ring && this.ctx.mob?.thrown ? [ring.position] : [];
+  }
+
   trackItems(track) { return track === 'exam' ? TESTS : LESSONS.filter((item) => !item.free); }
 
   isUnlocked(item) {
