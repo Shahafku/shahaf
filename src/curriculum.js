@@ -9,7 +9,8 @@ import { mobPassCondition } from './mob.js';
 // Shared item schema — see LessonManager for how each field is used:
 // { id, type: 'lesson'|'test', title, brief, environment, wind, boat, marks, steps,
 //   pass?(boat,ctx), fail?(boat,ctx)->reason|null, timed?, timeLimit?,
-//   timeLimitMsg?, mob?, stepHint?, takeaway, requires?, review?, free?, tutorial? }
+//   timeLimitMsg?, mob?, stepHint?, takeaway, requires?, review?, free?, tutorial?,
+//   ringsFrom? (tutorial step index from which rings count; default the last step) }
 // Tutorial steps may set feedbackTarget: 'steer' | 'sail' to attach distance feedback.
 // Track order controls unlocking/navigation. Legacy requires identifies review lessons only.
 
@@ -196,6 +197,9 @@ export const LESSONS = [
       '<b>Speed is the fuel</b> that carries you through the no-go zone — never tack slow.',
     wind: { dirFrom: 0, speed: 6.6 },
     boat: { x: -60, z: 0, heading: 40 * DEG, sheet: 12 * DEG },
+    // The first ring lies on the course sailed right after the tack, so rings
+    // count from the "Steady, trim and accelerate" step onward.
+    ringsFrom: 2,
     marks: [
       { x: 90, z: 170 },
       { x: -90, z: 340 },
