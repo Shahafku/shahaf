@@ -138,6 +138,17 @@ export class LessonManager {
     } : null);
   }
 
+  _enterStep(boat, index) {
+    const ctx = this.ctx;
+    this.stepIdx = index;
+    // a maneuver must happen AFTER its step is shown to count
+    ctx.tacked = false;
+    ctx.gybed = false;
+    if (this.current.tutorial) ctx.onCourseTime = 0;
+    this.current.steps[index].onEnter?.(boat, ctx);
+    this._showStep();
+  }
+
   _showStep() {
     const L = this.current;
     const s = L.steps[this.stepIdx];
@@ -206,7 +217,11 @@ export class LessonManager {
       this.markInfo.textContent =
         `Mark ${this.markIdx + 1}/${L.marks.length} · ${Math.round(dist)} m · brg ${String(Math.round(brg)).padStart(3, '0')}° ${side}`;
       ctx.onCourseTime = Math.abs(rel) < 15 * DEG && boat.speed > 1.0 ? ctx.onCourseTime + dt : 0;
-      if (dist < 13 && (!L.tutorial || this.stepIdx === L.steps.length - 1)) {
+      // Tutorials count rings from `ringsFrom` (default: the final step), so early
+      // rings cannot bypass coaching. A counted ring moves the coach to the final step.
+      const lastStep = L.steps.length - 1;
+      if (dist < 13 && (!L.tutorial || this.stepIdx >= (L.ringsFrom ?? lastStep))) {
+        if (L.tutorial && this.stepIdx < lastStep) this._enterStep(boat, lastStep);
         this.markIdx++;
         if (this.markIdx >= L.marks.length) {
           ctx.marksDone = true;
@@ -236,17 +251,7 @@ export class LessonManager {
 
     // ---- Step advancement (lessons) -------------------------------------
     const s = L.steps[this.stepIdx];
-    if (s && s.done(boat, ctx)) {
-      this.stepIdx = Math.min(this.stepIdx + 1, L.steps.length - 1);
-      if (L.steps[this.stepIdx] !== s) {
-        // a maneuver must happen AFTER its step is shown to count
-        ctx.tacked = false;
-        ctx.gybed = false;
-        if (L.tutorial) ctx.onCourseTime = 0;
-        L.steps[this.stepIdx].onEnter?.(boat, ctx);
-        this._showStep();
-      }
-    }
+    if (s && s.done(boat, ctx) && this.stepIdx < L.steps.length - 1) this._enterStep(boat, this.stepIdx + 1);
     if (L.timed) {
       this.raceTime += dt;
       this.raceClock.textContent = fmtTime(this.raceTime);

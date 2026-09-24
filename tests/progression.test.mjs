@@ -128,6 +128,7 @@ test('Lesson 3 requires speed, a fresh tack, and acceleration on the new side be
   tick();
   assert.equal(m.markIdx, 0, 'early rings cannot bypass coaching');
   assert.equal(m.stepIdx, 0, 'wait for 4.5 knots');
+  b.pos.x = -60; b.pos.z = 0; // sail away from the ring for the step checks
   b.speed = 2.4; b.twa = -10 * DEG;
   tick();
   assert.equal(m.stepIdx, 0, 'speed in the no-go zone is not ready to tack');
@@ -155,5 +156,20 @@ test('Lesson 3 requires speed, a fresh tack, and acceleration on the new side be
   for (const mark of m.current.marks) {
     b.pos.x = mark.x; b.pos.z = mark.z; tick();
   }
+  assert.equal(m.completed, true);
+});
+
+test('Lesson 3 counts the first ring when it is reached while accelerating after the tack', () => {
+  const { manager: m, boat: b, wind } = setup('tack');
+  const tick = () => m.update(0.05, b, wind, 0);
+  b.speed = 2.4; b.twa = -45 * DEG; tick();
+  assert.equal(m.stepIdx, 1);
+  b.twa = 5 * DEG; b.speed = 1.1; tick();
+  assert.equal(m.stepIdx, 2, 'tacked; now steadying on the new side');
+  // Still below 4.5 kn, but the post-tack course carries the boat through ring 1.
+  b.twa = 45 * DEG; b.speed = 2.0; b.pos.x = 90; b.pos.z = 170; tick();
+  assert.equal(m.markIdx, 1, 'ring 1 counts after the tack');
+  assert.equal(m.stepIdx, 3, 'coach moves on to the ring step');
+  for (const mark of m.current.marks.slice(1)) { b.pos.x = mark.x; b.pos.z = mark.z; tick(); }
   assert.equal(m.completed, true);
 });
