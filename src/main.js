@@ -525,7 +525,7 @@ function frame(now) {
 
   hudAccum += dt;
   if (hudAccum > 1 / 30) {
-    hud.update(hudAccum, boat, wind);
+    hud.update(hudAccum, boat, wind, lessons.target());
     hudAccum = 0;
   }
 

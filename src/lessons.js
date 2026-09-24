@@ -52,6 +52,15 @@ export class LessonManager {
 
   lesson() { return this.current; }
 
+  // World position the sailor is heading for (active mark or man-overboard ring), or null.
+  target() {
+    if (this.completed || this.failed) return null;
+    const mark = this.current.marks[this.markIdx];
+    if (mark) return mark;
+    const ring = this.mobCtl?.ring;
+    return ring && this.ctx.mob?.thrown ? ring.position : null;
+  }
+
   trackItems(track) { return track === 'exam' ? TESTS : LESSONS.filter((item) => !item.free); }
 
   isUnlocked(item) {
