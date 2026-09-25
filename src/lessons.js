@@ -24,6 +24,7 @@ export class LessonManager {
     this.raceTime = 0;
     this.mobCtl = null;
     this.reviewTarget = null;
+    this.unlockAll = false; // testing aid, set from ?unlock=all in main.js
 
     // Progress = set of completed item ids. Migrates the old linear
     // 'sail.unlocked' index (lessons 0..N-1 done) into ids once.
@@ -55,7 +56,7 @@ export class LessonManager {
 
   isUnlocked(item) {
     if (!item) return false;
-    if (item.free || this.progress.has(item.id)) return true;
+    if (item.free || this.unlockAll || this.progress.has(item.id)) return true;
     const items = this.trackItems(item.type === 'test' ? 'exam' : 'learn');
     const i = items.indexOf(item);
     return i === 0 || (i > 0 && this.progress.has(items[i - 1].id));
@@ -125,6 +126,7 @@ export class LessonManager {
     this.markInfo.textContent = '';
     this.raceClock.style.display = L.timed ? 'block' : 'none';
     document.getElementById('windPanel').classList.toggle('show', !!L.free);
+    document.getElementById('mobDemoBtn').hidden = !L.demo;
     this._syncPickers();
     this.renderTutorial(boat);
   }

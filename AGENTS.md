@@ -74,7 +74,10 @@ wires the other modules together.
 | `src/hud.js` | Wind rose, trim gauge, instruments, coach tips (`HUD`) |
 | `src/lessons.js` | `LessonManager` — the runtime that drives a lesson/test |
 | `src/curriculum.js` | Curriculum **data**: `LESSONS`, `TESTS`, `ALL`, `byId` |
-| `src/mob.js` | Man-overboard scenario (`MobController`, `mobPassCondition`) |
+| `src/mob.js` | Man-overboard scenario (`MobController`, `mobPassCondition`, `ringDropPoint`, `ringRelation`) |
+| `src/mob-drill.js` | Man-overboard demo **data + route**: the six exam steps (`MOB_DEMO_STEPS`) and the precomputed track (`buildMobTrack`) — pure, node-testable |
+| `src/mob-demo.js` | `MobDemo` — plays the recovery before Lesson 5 on the shared yacht/sea with captions and voiceover |
+| `src/voiceover.js` | `Voiceover` — thin wrapper over the browser's `speechSynthesis` (no audio files) |
 | `src/traffic.js` | AI traffic yacht (`TrafficBoat`) for practicing COLREGs Rule 12 right-of-way |
 | `styles.css` | HUD styling |
 | `index.html` | UI shell + HUD DOM |

@@ -134,6 +134,9 @@ src/hud.js            wind rose, trim gauge, instruments, coach tips
 src/lessons.js        lesson/test runtime (LessonManager)
 src/curriculum.js     curriculum data — LEARN lessons + EXAM tests
 src/mob.js            man-overboard scenario
+src/mob-drill.js      man-overboard demo steps + precomputed route
+src/mob-demo.js       man-overboard demo player (captions + voiceover)
+src/voiceover.js      browser speech-synthesis narration
 src/traffic.js        AI traffic yacht (COLREGs Rule 12 right-of-way)
 docs/RESEARCH.md      nautical rules & physics research behind the model
 tests/                runtime and browser regression checks

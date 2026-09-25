@@ -198,13 +198,20 @@ export class BoatView {
     this.heelGroup.add(this.crew);
   }
 
-  // pose 'idle' | 'throw'; k = 0..1 phase of the throw (wind up → release).
+  // pose 'idle' | 'throw' | 'point'. For 'throw', k = 0..1 phase of the throw
+  // (wind up → release); for 'point', k = relative bearing of the target
+  // (compass radians, + = to starboard), which the spotter's arm tracks.
   setCrewPose(pose, k = 0) {
     if (pose === 'throw') {
       // Swing the arm up and over the side, peaking just before release.
       const swing = Math.sin(Math.min(1, k) * Math.PI);
       this.crewArm.rotation.z = -0.25 - 2.4 * swing;
       this.crew.rotation.y = -0.6 * swing; // twist toward the quarter
+    } else if (pose === 'point') {
+      // Arm raised just above level; the body turns so it points along the
+      // bearing. The arm rests along local −X, so yaw π/2 − bearing aims it.
+      this.crewArm.rotation.z = -Math.PI / 2 - 0.2;
+      this.crew.rotation.y = Math.PI / 2 - k;
     } else {
       this.crewArm.rotation.z = -0.25;
       this.crew.rotation.y = 0;

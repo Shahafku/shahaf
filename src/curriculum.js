@@ -9,7 +9,9 @@ import { mobPassCondition } from './mob.js';
 // Shared item schema — see LessonManager for how each field is used:
 // { id, type: 'lesson'|'test', title, brief, environment, wind, boat, marks, steps,
 //   pass?(boat,ctx), fail?(boat,ctx)->reason|null, timed?, timeLimit?,
-//   timeLimitMsg?, mob?, stepHint?, takeaway, requires?, review?, free?, tutorial? }
+//   timeLimitMsg?, mob?, demo?, stepHint?, takeaway, requires?, review?, free?, tutorial? }
+// demo: 'mob' plays the man-overboard demo (mob-demo.js) before the first MOB
+// lesson and offers a replay button in every lesson that has it.
 // Track order controls unlocking/navigation. Legacy requires identifies review lessons only.
 
 const ironsFail = (sec) => (b, ctx) =>
@@ -249,6 +251,7 @@ export const LESSONS = [
     boat: { x: 0, z: 0, heading: 90 * DEG, sheet: 45 * DEG },
     marks: [],
     mob: { throwAfter: 8, tossDist: 4, driftFactor: 0.015 },
+    demo: 'mob',
     steps: [
       {
         text: 'Sail on — your crewmate is standing by at the stern. Build speed on the beam reach.',
@@ -280,6 +283,7 @@ export const LESSONS = [
     boat: { x: 0, z: 0, heading: 90 * DEG, sheet: 45 * DEG },
     marks: [],
     mob: { throwAfter: 15, tossDist: 5, driftFactor: 0.02 },
+    demo: 'mob',
     steps: [
       {
         text: 'Sail the beam reach and wait for the shout…',
@@ -307,6 +311,7 @@ export const LESSONS = [
     boat: { x: 0, z: 0, heading: 90 * DEG, sheet: 45 * DEG },
     marks: [],
     mob: { throwAfter: 10, tossDist: 6, driftFactor: 0.025 },
+    demo: 'mob',
     steps: [
       {
         text: 'Strong breeze. When the ring goes in: clear away, come back downwind of it, and make one clean, slow approach.',

@@ -206,6 +206,40 @@ you are the stand-on or the give-way vessel, and what to do about it.
 | Accidental gybe | Sailing by the lee triggers warning, then a fast boom sweep |
 | COLREGs Rule 12 | HUD reports current tack; lesson text teaches port/starboard & windward/leeward |
 
+## 8. Man Overboard (אדם בים) — the Israeli Exam Procedure
+
+The Israel Shipping and Ports Authority question bank (see Sources) answers
+"what do you do when a person falls overboard in rough seas under sail?" with:
+**shout "man overboard" (קורא אדם בים), throw a lifebuoy (זורק גלגל הצלה),
+keep eye contact (שומר קשר עין), bear away to a beam reach (יורד לרוח צד) and
+perform the man-overboard maneuver.** The practical exam then scores the final
+picture: *המצוף בשליש הקדמי של הספינה, הספינה עומדת, המצוף מעל לרוח* — the ring
+in the front third of the boat, the boat standing, the ring to windward.
+
+The maneuver as the simulator teaches it (Lesson 5 demo, `src/mob-drill.js`):
+
+1. **Shout, throw, point.** Shout the alarm, throw the ring, name a spotter who
+   points at it for the whole maneuver.
+2. **Beam reach away** (רוח צד) for 3–4 boat lengths — room to turn and set up.
+3. **Tack** (מהפך): bow through the wind onto the other tack.
+4. **Broad reach back** to a point about 2 boat lengths downwind of the ring.
+   The final approach must come from downwind: only there can a luffing sail
+   stop the boat.
+5. **Head up to a close reach** aimed just to leeward of the ring and ease the
+   sheet right out — the luffing sail is the brake.
+6. **Stop** with the ring close aboard at the windward bow, in the front third.
+
+Approaching from upwind fails twice over: the boat cannot depower (the sail
+fills instead of luffing) and it drifts down onto the person. The exercise's
+fail rules (`mobFail` in `src/curriculum.js`) punish hitting the ring with way
+on and repeated blown approaches.
+
+| Reality | Simulator implementation |
+|---|---|
+| Ring thrown over the leeward quarter | `ringDropPoint()` in `src/mob.js`, shared by the lesson and the demo |
+| Exam's final picture | `mobPassCondition()` — stopped > 3 s, ring 1.5–8 m, ahead of mid-ship, within 70° of the bow, to windward |
+| Demo route | Precomputed kinematic track; the turn-up point is solved so the straight approach stops with the ring 2.2 m to windward, 3.2 m ahead — checked against `mobPassCondition` in `tests/mob-drill.test.mjs` |
+
 ## Sources
 
 - [Point of sail — Wikipedia](https://en.wikipedia.org/wiki/Point_of_sail)
@@ -218,3 +252,4 @@ you are the stand-on or the give-way vessel, and what to do about it.
 - [COLREGs Rule 12 (Sailing vessels) — ecolregs.com](https://www.ecolregs.com/index.php?option=com_k2&view=item&layout=item&id=54&Itemid=387&lang=en)
 - [Rule 12 — Sailing vessels — Cult of Sea](https://www.cultofsea.com/colregs/part-b-steering-and-sailing-rules-4-19/rule-12-sailing-vessels/)
 - [Types of Sailing and Maneuvers — SailFleet](https://www.sailfleet.net/en/sailing-terminology)
+- [Seamanship exam question bank (man overboard under sail, q. 141) — Israel Shipping and Ports Authority](https://www.gov.il/BlobFolder/guide/sailing-certificate/he/sq3.pdf)

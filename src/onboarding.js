@@ -3,16 +3,20 @@ import { storage } from './storage.js';
 import { byId } from './curriculum.js';
 import { THEORY_STAGES } from './theory.js';
 import { theoryChartMarkup } from './theory-chart.js';
+import { MOB_DEMO_STEPS } from './mob-drill.js';
 const PREF_KEY = 'sail.onboarding.v1';
+const MOB_DEMO_KEY = 'sail.mobDemo.v1';
 const $ = (id) => document.getElementById(id);
 
 export class SailingFlow {
-  constructor(lessons, start, onStateChange, controls, onTheoryStage = () => {}) {
+  constructor(lessons, start, onStateChange, controls, onTheoryStage = () => {}, onMobDemo = () => null) {
     this.lessons = lessons;
     this.start = start;
     this.onStateChange = onStateChange;
     this.controls = controls;
     this.onTheoryStage = onTheoryStage;
+    this.onMobDemo = onMobDemo;
+    this.pendingDemoItem = null;
     this.overlay = $('introOverlay');
     this.content = $('introContent');
     this.track = 'learn';
@@ -136,6 +140,56 @@ export class SailingFlow {
       this.showTheory(0);
       return;
     }
+    // The man-overboard demo plays once, before the first MOB lesson.
+    if (item.demo === 'mob' && !review && storage.getItem(MOB_DEMO_KEY) !== '1') {
+      this.showMobDemo(item);
+      return;
+    }
+    this.start(item);
+    this.sail();
+  }
+
+  // Watch the whole recovery sailed with a voiceover, then take the helm.
+  showMobDemo(item) {
+    this.pendingDemoItem = item;
+    const steps = MOB_DEMO_STEPS.map((step, i) =>
+      `<li><button type="button" data-step="${i}"><span class="mob-step-n" aria-hidden="true">${i + 1}</span><span class="mob-step-title">${step.title}</span></button></li>`).join('');
+    this.screen('mob-demo', `
+      <div class="theory-header">
+        <span class="theory-count">DEMO · MAN OVERBOARD · <bdi lang="he">אדם בים</bdi></span>
+        <button id="mobDemoSkip" class="theory-skip">Skip demo</button>
+      </div>
+      <h1 id="introTitle" tabindex="-1">Watch the recovery</h1>
+      <p class="theory-lead">The exam procedure, sailed for you with a voiceover. Wind blows from the north, the top of the overhead view.</p>
+      <ol id="mobDemoSteps" class="mob-steps" aria-label="Recovery steps">${steps}</ol>
+      <div class="theory-readout"><p id="mobDemoCaption" aria-live="polite"></p></div>
+      <div class="mob-progress" aria-hidden="true"><span id="mobDemoBar"></span></div>
+      <div class="theory-playback">
+        <button id="mobDemoPause" type="button">Pause</button>
+        <button id="mobDemoReplay" type="button">Replay</button>
+        <button id="mobDemoVoice" type="button" aria-pressed="true">🔊 Voice on</button>
+      </div>
+      <div class="theory-nav">
+        <span></span>
+        <button id="mobDemoDone" class="primary">Start ${item.title.split('·')[0].trim()} <span aria-hidden="true">→</span></button>
+      </div>`);
+    const demo = this.onMobDemo();
+    $('mobDemoSteps').addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-step]');
+      if (button) demo?.seek(Number(button.dataset.step));
+    });
+    $('mobDemoPause').addEventListener('click', () => demo?.togglePause());
+    $('mobDemoReplay').addEventListener('click', () => demo?.replay());
+    $('mobDemoVoice').addEventListener('click', () => demo?.toggleVoice());
+    $('mobDemoSkip').addEventListener('click', () => this.finishMobDemo());
+    $('mobDemoDone').addEventListener('click', () => this.finishMobDemo());
+  }
+
+  finishMobDemo() {
+    const item = this.pendingDemoItem;
+    if (!item) return;
+    this.pendingDemoItem = null;
+    storage.setItem(MOB_DEMO_KEY, '1');
     this.start(item);
     this.sail();
   }

@@ -14,6 +14,8 @@ import { WindStreaks } from './ocean.js';
 import { storage } from './storage.js';
 import { SailingFlow } from './onboarding.js';
 import { TheoryDemo } from './theory-demo.js';
+import { MobDemo } from './mob-demo.js';
+import { Voiceover } from './voiceover.js';
 
 // ------------------------------------------------------------------ Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -44,9 +46,13 @@ const boat = new Boat();
 const view = new BoatView(scene);
 const hud = new HUD();
 const lessons = new LessonManager(scene, hud, view, worldEnvironment);
+// Testing aid: ?unlock=all opens every lesson and test without changing saved progress.
+lessons.unlockAll = new URLSearchParams(location.search).get('unlock') === 'all';
 const traffic = new TrafficBoat(scene);
 const streaks = new WindStreaks(scene);
 const theoryDemo = new TheoryDemo({ view, env, coast, streaks, camera });
+const mobDemo = new MobDemo({ scene, view, env, coast, streaks, camera, voice: new Voiceover() });
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -64,7 +70,11 @@ function clearInput() {
   boat.rudder = 0;
 }
 addEventListener('blur', clearInput);
-document.addEventListener('visibilitychange', () => { if (document.hidden) clearInput(); });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) return;
+  clearInput();
+  if (flow?.state === 'mob-demo' && !mobDemo.paused) mobDemo.togglePause();
+});
 // Inert handles focus and pointer access; this also guards synthetic input.
 for (const type of ['click', 'pointerdown', 'wheel', 'input']) {
   document.getElementById('simulator').addEventListener(type, (event) => {
@@ -73,6 +83,10 @@ for (const type of ['click', 'pointerdown', 'wheel', 'input']) {
 }
 addEventListener('keydown', (e) => {
   if (!canSail()) {
+    if (flow?.state === 'mob-demo' && e.code === 'Space' && e.target.tagName !== 'BUTTON') {
+      e.preventDefault();
+      mobDemo.togglePause();
+    }
     if (flow?.state === 'result' && e.code === 'Enter' && e.target.tagName !== 'BUTTON') {
       e.preventDefault();
       if (lessons.failed) flow.enterItem(lessons.lesson());
@@ -384,15 +398,26 @@ flow = new SailingFlow(lessons, (item) => {
   clearInput();
   setMenu(false);
   if (state !== 'theory') theoryDemo.stop();
+  if (state !== 'mob-demo') mobDemo.stop();
   if (audio) audio.master.gain.setTargetAtTime(state === 'sailing' && audioOn ? 1 : 0, audio.ctx.currentTime, 0.2);
 }, () => ({ touch: matchMedia('(pointer: coarse)').matches, helm: helmMode }),
   (stage) => {
-    for (const buoy of lessons.buoys) buoy.visible = false;
-    if (lessons.mobCtl?.ring) lessons.mobCtl.ring.visible = false;
-    traffic.setActive(false, wind);
+    hideExercise();
     theoryDemo.setStage(stage);
     return theoryDemo;
+  },
+  () => {
+    hideExercise();
+    mobDemo.start({ reducedMotion: reducedMotion() });
+    return mobDemo;
   });
+// Demos borrow the scene: keep the exercise's marks, ring and traffic out of it.
+function hideExercise() {
+  for (const buoy of lessons.buoys) buoy.visible = false;
+  if (lessons.mobCtl?.ring) lessons.mobCtl.ring.visible = false;
+  traffic.setActive(false, wind);
+}
+document.getElementById('mobDemoBtn').addEventListener('click', () => flow.showMobDemo(lessons.lesson()));
 document.getElementById('guidanceToggle').addEventListener('click', () => {
   lessons.guidanceHidden = !lessons.guidanceHidden;
   lessons.renderTutorial(boat);
@@ -400,7 +425,7 @@ document.getElementById('guidanceToggle').addEventListener('click', () => {
 
 // Debug/console handle (also used by automated tests)
 window.__sail = {
-  boat, wind, lessons, LESSONS, TESTS, ALL, byId, view, traffic, flow, env, coast, streaks, scene, theoryDemo,
+  boat, wind, lessons, LESSONS, TESTS, ALL, byId, view, traffic, flow, env, coast, streaks, scene, theoryDemo, mobDemo,
   select: (id) => selectItem(byId(id)),
   mob: () => lessons.mobCtl,
 };
@@ -418,7 +443,13 @@ function frame(now) {
   last = now;
 
   if (flow.state === 'theory' && !document.hidden) {
-    theoryDemo.update(dt, matchMedia('(prefers-reduced-motion: reduce)').matches);
+    theoryDemo.update(dt, reducedMotion());
+    renderer.render(scene, camera);
+    return;
+  }
+
+  if (flow.state === 'mob-demo' && !document.hidden) {
+    mobDemo.update(dt);
     renderer.render(scene, camera);
     return;
   }

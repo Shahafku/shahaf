@@ -6,8 +6,20 @@
 import { DEG, wrapPi } from './physics.js';
 import { makeLifeRing, bobLifeRing } from './ocean.js';
 
-const THROW_ANIM = 0.7;   // seconds of arm swing before the ring is loose
-const SPLASH_TIME = 0.5;  // seconds of ballistic arc down to the water
+export const THROW_ANIM = 0.7;   // seconds of arm swing before the ring is loose
+export const SPLASH_TIME = 0.5;  // seconds of ballistic arc down to the water
+export const THROW_HEIGHT = 1.6; // deck height the ring falls from
+
+// Where the lifebuoy lands: over the leeward quarter, clear of the hull.
+export function ringDropPoint(boat, tossDist) {
+  const fwd = boat.forward(), stb = boat.starboard();
+  const windSide = Math.sign(boat.awa) || 1; // + = wind from starboard
+  const side = -windSide * (1.3 + tossDist);
+  return {
+    x: boat.pos.x - fwd.x * 3 + stb.x * side,
+    z: boat.pos.z - fwd.z * 3 + stb.z * side,
+  };
+}
 
 export class MobController {
   // cfg = { throwAfter, tossDist, driftFactor } from the curriculum item.
@@ -65,17 +77,10 @@ export class MobController {
   }
 
   _release(boat) {
-    const fwd = boat.forward(), stb = boat.starboard();
-    const windSide = Math.sign(boat.awa) || 1; // + = wind from starboard
-    // Over the leeward quarter, clear of the hull.
-    const side = -windSide * (1.3 + this.cfg.tossDist);
+    const drop = ringDropPoint(boat, this.cfg.tossDist);
     this.ring = makeLifeRing();
-    this.ring.position.set(
-      boat.pos.x - fwd.x * 3 + stb.x * side,
-      0,
-      boat.pos.z - fwd.z * 3 + stb.z * side
-    );
-    this._throwY = 1.6; // deck height, decays to the water over SPLASH_TIME
+    this.ring.position.set(drop.x, 0, drop.z);
+    this._throwY = THROW_HEIGHT; // decays to the water over SPLASH_TIME
     this.scene.add(this.ring);
   }
 
@@ -85,16 +90,8 @@ export class MobController {
       return;
     }
     const m = ctx.mob && ctx.mob.thrown ? ctx.mob : { overshoots: 0, hullStrike: false };
-    const dx = this.ring.position.x - boat.pos.x;
-    const dz = this.ring.position.z - boat.pos.z;
-    const brgTo = Math.atan2(-dx, dz); // compass bearing boat → ring
-    const fwd = boat.forward();
     m.thrown = true;
-    m.ringDist = Math.hypot(dx, dz);
-    m.ringRelBearing = wrapPi(brgTo - boat.heading);
-    m.ringFwdOffset = dx * fwd.x + dz * fwd.z; // meters ahead of mid-ship
-    // "מעל לרוח": the ring lies toward where the wind comes from.
-    m.ringWindward = Math.abs(wrapPi(brgTo - wind.dirFrom)) < 80 * DEG;
+    Object.assign(m, ringRelation(boat, this.ring.position, wind.dirFrom));
 
     // A pass close aboard at speed that then opens up again = blown approach.
     if (m.ringDist < 12 && Math.abs(boat.speed) > 1.8) this._wasClose = true;
@@ -106,6 +103,21 @@ export class MobController {
     if (m.ringDist < 1.9 && Math.abs(boat.speed) > 0.8) m.hullStrike = true;
     ctx.mob = m;
   }
+}
+
+// Where the ring sits relative to the boat, in the terms the exam scores.
+export function ringRelation(boat, ring, windDirFrom) {
+  const dx = ring.x - boat.pos.x;
+  const dz = ring.z - boat.pos.z;
+  const brgTo = Math.atan2(-dx, dz); // compass bearing boat → ring
+  const fwd = boat.forward();
+  return {
+    ringDist: Math.hypot(dx, dz),
+    ringRelBearing: wrapPi(brgTo - boat.heading),
+    ringFwdOffset: dx * fwd.x + dz * fwd.z, // meters ahead of mid-ship
+    // "מעל לרוח": the ring lies toward where the wind comes from.
+    ringWindward: Math.abs(wrapPi(brgTo - windDirFrom)) < 80 * DEG,
+  };
 }
 
 // The exam's final picture: boat standing, ring close aboard in the front

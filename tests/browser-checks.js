@@ -290,6 +290,30 @@ const cases = [
     assert(a.flow.state === 'sailing', 'Lesson 1 replay enters simulator directly');
     assert(a.lessons.stepIdx === 0 && !a.boat.autoTrim, 'Lesson 1 replay starts fresh');
   }],
+  ['man-overboard demo plays once before Lesson 5 and replays on demand', async () => {
+    const { app: a, d, key, click } = await fixture({
+      'sail.onboarding.v1': pref('learn'), 'sail.progress.v2': progress(['course', 'upwind', 'tack', 'gybe']), 'sail.voice': 'off',
+    });
+    assert(a.flow.state === 'mob-demo' && d.getElementById('simulator').inert, 'first Lesson 5 entry opens the demo and freezes the simulator');
+    assert(d.querySelectorAll('#mobDemoSteps li').length === 6 && d.getElementById('mobDemoCaption').textContent.includes('אדם בים'), 'six steps with the Hebrew exam terms');
+    const start = a.mobDemo.t; await pause(400);
+    assert(a.mobDemo.t > start, 'the demo plays');
+    key('Space'); const held = a.mobDemo.t; await pause(300);
+    assert(a.mobDemo.paused && a.mobDemo.t === held, 'Space pauses the demo');
+    d.querySelector('#mobDemoSteps button[data-step="4"]').click();
+    assert(d.querySelector('#mobDemoSteps li.active button').dataset.step === '4', 'step buttons jump to that step');
+    click('mobDemoSkip');
+    assert(a.flow.state === 'sailing' && a.lessons.current.id === 'mob-easy' && !a.mobDemo.active && !a.mobDemo.ring.parent, 'Skip starts Lesson 5 and clears the demo');
+    assert(!d.getElementById('mobDemoBtn').hidden, 'Lesson 5 offers a replay');
+    a.flow.enterItem(a.byId('mob-easy'));
+    assert(a.flow.state === 'sailing', 'the demo autoplays only once');
+    click('mobDemoBtn');
+    assert(a.flow.state === 'mob-demo', 'the replay button reopens the demo');
+    click('mobDemoDone');
+    assert(a.flow.state === 'sailing' && a.lessons.ctx.t < 0.5, 'Start restarts the lesson fresh');
+    a.flow.enterItem(a.byId('t-mob'), { review: true });
+    assert(d.getElementById('mobDemoBtn').hidden, 'the exam offers no demo');
+  }],
   ['coast, sea and wind cues follow activities and Free Sail controls', async () => {
     const { app: a, d, w, click } = await fixture();
     click('chooseLearn'); click('setSailBtn'); click('theorySkip');
